@@ -1,0 +1,10 @@
+DerivedData/
+build/
+.DS_Store
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+.idea/
+*.swiftpm/
+.swiftpm/
+.vscode/
+*.playground

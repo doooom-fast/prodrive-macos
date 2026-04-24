@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.sports</string>
+    <!-- Prevents macOS from spawning a second process when a
+         racecor-native:// URL is dispatched while the app is already
+         running. Without this, Launch Services launches a fresh .app
+         whose AuthManager has no pending PKCE verifier, so the OAuth
+         exchange fails with the second window stuck on a spinner. -->
+    <key>LSMultipleInstancesProhibited</key>
+    <true/>
+    <key>NSMainStoryboardFile</key>
+    <string></string>
+    <key>NSPrincipalClass</key>
+    <string>$(PRINCIPAL_CLASS)</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>RaceCor OAuth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>racecor-native</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
