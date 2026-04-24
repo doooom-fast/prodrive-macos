@@ -20,11 +20,15 @@ enum Destination: String, CaseIterable {
         case .moments: return "sparkles"
         case .tracks: return "map"
         case .cars: return "car.2"
-        case .dna: return "dna"
+        // `dna` and `chat.left.quote` are NOT valid SF Symbol names (console
+        // warnings: "No symbol named 'dna' found in system symbol set").
+        // Using the closest valid matches: `atom` for driver DNA, and
+        // `quote.bubble` for the debrief panel.
+        case .dna: return "atom"
         case .when: return "calendar"
         case .safety: return "shield"
         case .composure: return "heart"
-        case .debrief: return "chat.left.quote"
+        case .debrief: return "quote.bubble"
         case .settings: return "gear"
         }
     }

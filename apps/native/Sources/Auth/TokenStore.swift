@@ -25,65 +25,63 @@ struct Token: Codable {
 ///   Collapsing (accessToken, refreshToken, expiresAt) into a single
 ///   JSON-encoded keychain entry halves the number of SecItem calls. Even
 ///   if something ever forced a prompt, it would be 1 prompt, not 3.
+/// Disk-backed token persistence.
+///
+/// Earlier this used the macOS keychain. Two problems hit in that order:
+///   1. The file-backed login keychain prompts 20+ times per sign-in because
+///      ad-hoc-signed dev builds change code signature every rebuild, and
+///      each SecItem operation against an existing item requires re-auth.
+///   2. Switching to the data-protection keychain
+///      (`kSecUseDataProtectionKeychain: true`) eliminated the prompts but
+///      returned `errSecMissingEntitlement` (status=-34018) because that
+///      keychain requires an `application-identifier` entitlement only
+///      provisioned by Apple Developer signing.
+///
+/// Both paths fail for ad-hoc dev builds. Writing a JSON file under
+/// Application Support works with zero signing requirements, is sandboxed
+/// to this app's container on signed builds, and is trivial to swap back
+/// to the keychain later once there's a real Developer ID signature. The
+/// OAuth tokens it stores are short-lived and refreshable, so the reduced
+/// confidentiality vs. keychain is acceptable for a logged-in-user context.
 final class TokenStore {
-    private let service = "racing.k10motorsports.prodrive.racecor.mac"
-    private let account = "tokens.v1"
+    private let fileURL: URL
+
+    init() {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = base.appendingPathComponent("racing.k10motorsports.prodrive.racecor.mac", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        fileURL = dir.appendingPathComponent("tokens.json")
+    }
 
     func save(accessToken: String, refreshToken: String, expiresAt: Date) {
         let token = Token(accessToken: accessToken, refreshToken: refreshToken, expiresAt: expiresAt)
-        guard let data = try? JSONEncoder().encode(token) else {
-            Log.error("TokenStore save: failed to encode token JSON")
-            return
-        }
-
-        // Delete then add — SecItemAdd rejects duplicates.
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
-        SecItemDelete(query as CFDictionary)
-
-        var attributes = query
-        attributes[kSecValueData as String] = data
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-
-        let status = SecItemAdd(attributes as CFDictionary, nil)
-        if status != errSecSuccess {
-            Log.error("TokenStore save: SecItemAdd status=\(status)")
+        do {
+            let data = try JSONEncoder().encode(token)
+            try data.write(to: fileURL, options: [.atomic])
+            // Best-effort POSIX permissions so other users on a shared Mac
+            // can't read the file. Signed sandboxed builds get per-app
+            // container isolation for free; this is insurance for dev.
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o600],
+                ofItemAtPath: fileURL.path
+            )
+        } catch {
+            Log.error("TokenStore save failed: \(error)")
         }
     }
 
     func load() -> Token? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecUseDataProtectionKeychain as String: true,
-            kSecReturnData as String: true,
-        ]
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        guard status == errSecSuccess, let data = result as? Data else {
-            if status != errSecItemNotFound {
-                Log.error("TokenStore load: SecItemCopyMatching status=\(status)")
-            }
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            return try JSONDecoder.racecor.decode(Token.self, from: data)
+        } catch {
+            Log.error("TokenStore load failed: \(error)")
             return nil
         }
-
-        return try? JSONDecoder.racecor.decode(Token.self, from: data)
     }
 
     func delete() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
-        SecItemDelete(query as CFDictionary)
+        try? FileManager.default.removeItem(at: fileURL)
     }
 }

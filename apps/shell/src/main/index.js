@@ -52,32 +52,47 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 
-  // Handle navigation: keep same-origin in the window, external links in system browser
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    const mainUrl = new URL(RACECOR_URL);
-    const navUrl = new URL(url);
-
-    if (mainUrl.hostname === navUrl.hostname) {
-      // Same origin: allow
-      return;
+  // Hosts that must be allowed to navigate within this window instead of
+  // being handed off to the system browser. Discord OAuth in particular
+  // MUST stay in this window: if the authorize URL opens in Safari, the
+  // callback hits Safari's cookie jar, and the PKCE/state cookies that
+  // NextAuth set in THIS window's session won't be there — producing the
+  // `[auth][error] InvalidCheck` server error page in this window after
+  // login. Cloudflare challenge pages can fire during Discord auth too,
+  // so allow those as well. This mirrors the iOS shell's allowlist.
+  const INTERNAL_NAV_HOSTS = new Set([
+    'discord.com',
+    'discordapp.com',
+    'cdn.discordapp.com',
+    'challenges.cloudflare.com',
+  ]);
+  function isInternalHost(hostname) {
+    const main = new URL(RACECOR_URL).hostname;
+    if (hostname === main) return true;
+    if (INTERNAL_NAV_HOSTS.has(hostname)) return true;
+    // Match any subdomain of an allowed host (e.g. foo.discord.com).
+    for (const allowed of INTERNAL_NAV_HOSTS) {
+      if (hostname.endsWith('.' + allowed)) return true;
     }
+    return false;
+  }
 
-    // Different origin: open externally
+  // Handle navigation: keep same-origin + allowlisted auth hosts in the
+  // window, everything else goes to the system browser.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const navUrl = new URL(url);
+    if (isInternalHost(navUrl.hostname)) return;
     event.preventDefault();
     shell.openExternal(url);
   });
 
-  // Handle window.open() calls: external links in system browser
+  // Handle window.open() calls: same policy — allowlisted hosts in a
+  // child window, everything else externally.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const mainUrl = new URL(RACECOR_URL);
     const openUrl = new URL(url);
-
-    if (mainUrl.hostname === openUrl.hostname) {
-      // Same origin: allow in new window
+    if (isInternalHost(openUrl.hostname)) {
       return { action: 'allow' };
     }
-
-    // Different origin: open externally
     shell.openExternal(url);
     return { action: 'deny' };
   });

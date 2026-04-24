@@ -70,10 +70,28 @@ struct Lap: Codable, Identifiable {
     let isIncident: Bool
 }
 
+/// Matches `GET /api/v1/dashboard` (see `apps/web/src/lib/queries/dashboard.ts`).
+///
+/// The server's aggregate has richer structure than the native app consumes
+/// today — we only decode the fields the macOS UI actually shows, and leave
+/// the rest as arbitrary JSON via `_unused` sinks so future additions don't
+/// break decoding. `recentSessions` is NOT part of this payload — fetch it
+/// separately via `APIClient.sessions()`.
 struct Dashboard: Codable {
-    let totalRaces: Int
-    let totalTracks: Int
-    let totalCars: Int
-    let careerSpanDays: Int?
-    let recentSessions: [SessionListItem]
+    struct Stats: Codable {
+        let totalRaces: Int
+        let totalLaps: Int
+        let uniqueTracks: Int
+        let uniqueCars: Int
+        let careerSpanDays: Int
+    }
+
+    let stats: Stats
+    let pluginConnected: Bool
+
+    // Flat convenience accessors so existing UI code compiles unchanged.
+    var totalRaces: Int { stats.totalRaces }
+    var totalTracks: Int { stats.uniqueTracks }
+    var totalCars: Int { stats.uniqueCars }
+    var careerSpanDays: Int? { stats.careerSpanDays > 0 ? stats.careerSpanDays : nil }
 }

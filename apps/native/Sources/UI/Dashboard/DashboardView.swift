@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @State private var dashboard: Dashboard?
+    @State private var recentSessions: [SessionListItem] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -38,15 +39,16 @@ struct DashboardView: View {
                             }
                         }
 
-                        // Recent sessions
+                        // Recent sessions — fetched from /api/v1/sessions,
+                        // not included in the dashboard aggregate.
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Recent Sessions")
                                 .font(.headline)
-                            if dashboard.recentSessions.isEmpty {
+                            if recentSessions.isEmpty {
                                 Text("No sessions yet")
                                     .foregroundColor(.secondary)
                             } else {
-                                List(dashboard.recentSessions) { session in
+                                List(recentSessions) { session in
                                     NavigationLink(destination: SessionDetailView(sessionId: session.id)) {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(session.seriesName)
@@ -61,7 +63,7 @@ struct DashboardView: View {
                                         }
                                     }
                                 }
-                                .frame(height: CGFloat(min(dashboard.recentSessions.count * 60, 300)))
+                                .frame(height: CGFloat(min(recentSessions.count * 60, 300)))
                             }
                         }
                     }
@@ -99,7 +101,12 @@ struct DashboardView: View {
         isLoading = true
         errorMessage = nil
         do {
-            dashboard = try await APIClient.shared.dashboard()
+            // Fire both concurrently — dashboard stats and recent sessions
+            // come from different endpoints.
+            async let dashTask = APIClient.shared.dashboard()
+            async let sessionsTask = APIClient.shared.sessions(limit: 5, offset: 0, category: "all")
+            dashboard = try await dashTask
+            recentSessions = (try? await sessionsTask)?.sessions ?? []
         } catch {
             errorMessage = error.localizedDescription
             Log.error("Failed to load dashboard: \(error)")
