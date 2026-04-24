@@ -1,39 +1,16 @@
 import SwiftUI
 
+/// Signed-in root. Kept deliberately minimal — no toolbar chrome. The
+/// theme picker + account menu now live at the bottom of the sidebar
+/// (ContentView), not the window title bar, per product direction.
 struct MainShell: View {
     @EnvironmentObject var authManager: AuthManager
     let user: Me
 
     var body: some View {
-        ContentView()
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("RaceCor Pro Drive")
-                        .font(.headline)
-                }
-                ToolbarItem(placement: .automatic) {
-                    Menu {
-                        Button("Sign Out") {
-                            authManager.signOut()
-                        }
-                    } label: {
-                        Image(systemName: "person.circle")
-                    }
-                }
+        ContentView(user: user)
+            .task {
+                await ThemeStore.shared.refresh()
             }
     }
-}
-
-#Preview {
-    MainShell(user: Me(
-        id: "test",
-        discordId: "0",
-        discordUsername: "testuser",
-        discordDisplayName: "Test User",
-        discordAvatar: nil,
-        customLogoUrl: nil,
-        email: "test@example.com",
-        createdAt: Date()
-    ))
-    .environmentObject(AuthManager())
 }

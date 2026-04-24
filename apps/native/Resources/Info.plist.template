@@ -10,6 +10,13 @@
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <!-- Points macOS at Assets.xcassets/AppIcon.appiconset. Without this
+         key the Dock falls back to a generic document icon even when the
+         asset catalog has valid PNGs, because Launch Services has no
+         way to resolve "which icon set?" for apps with a catalog-based
+         icon. This is the #1 reason the Dock keeps showing the default. -->
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
     <key>CFBundlePackageType</key>

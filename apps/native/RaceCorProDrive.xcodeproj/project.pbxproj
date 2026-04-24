@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		03C335861472E96057A3DA0A /* RaceCorProDriveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 062663FA8F7333E1A850A9EB /* RaceCorProDriveApp.swift */; };
 		0907C48AA4ABD57AB6B97393 /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4A28E7F43147028869A446 /* SessionsView.swift */; };
+		0C512B26B912C8DD9D2473C2 /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E50424B53305D1A459BB4B9 /* DashboardComponents.swift */; };
+		1A47831D5CE6342F5F1DD357 /* ThemeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9169A0287D33B34B3D6AE0 /* ThemeStore.swift */; };
 		219C7805C9450461BFA32C59 /* MainShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38F075EB3F59D2CEE584B4D /* MainShell.swift */; };
 		233E8C4933F3F4ED4C575566 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5225EBD2C8B643B1FAD536 /* DashboardView.swift */; };
 		271C56D0553DDDCC45445832 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA4B280038A84D4621BAC33 /* LoginView.swift */; };
@@ -17,8 +19,11 @@
 		437CAEEAE8496AD2D5346689 /* TokenLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7D4DB503DF2B4CBD9AE4F88 /* TokenLoader.swift */; };
 		447D1F40C0228F9A61A93B1F /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FBF0D603CDAADF4FA60F48 /* Tokens.swift */; };
 		45F97197D0B7FE8E3DB79AAE /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D2E26D80D9896D1A3079558 /* APIClient.swift */; };
+		57E1C43ADB7513BDB3E47498 /* TopNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFAD0F62AC689EE96DC66A94 /* TopNavBar.swift */; };
+		6912ED1A0ECFE3FB7CFF45CD /* DataStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08B641940B8698C5E481A92 /* DataStrip.swift */; };
 		6F7ECFAEAC4F612CFA8CD844 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3024FC7A8F1391E2A2FF3666 /* Models.swift */; };
 		726D60DBFF058EF18B3E326A /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10DF9C8DF9A2EC4F1A185DB4 /* SessionDetailView.swift */; };
+		7DEBB0B616C046100DD47D53 /* BrandKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */; };
 		9F27D10C69A4CBF698BA627D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9867F4D5244C7964E0EBDC06 /* ContentView.swift */; };
 		A11B39C348CE2A6B96ACE729 /* PKCEChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CF192B1EC82F4C4182552D /* PKCEChallenge.swift */; };
 		AEED8917E959011469BD777F /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E0AE28A23F630856C27C5 /* Log.swift */; };
@@ -30,10 +35,12 @@
 		062663FA8F7333E1A850A9EB /* RaceCorProDriveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceCorProDriveApp.swift; sourceTree = "<group>"; };
 		10DF9C8DF9A2EC4F1A185DB4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		1A7E0AE28A23F630856C27C5 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		1E50424B53305D1A459BB4B9 /* DashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardComponents.swift; sourceTree = "<group>"; };
 		21CF192B1EC82F4C4182552D /* PKCEChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKCEChallenge.swift; sourceTree = "<group>"; };
 		2B5225EBD2C8B643B1FAD536 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3024FC7A8F1391E2A2FF3666 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		3D2E26D80D9896D1A3079558 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		3E9169A0287D33B34B3D6AE0 /* ThemeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStore.swift; sourceTree = "<group>"; };
 		5EA4B280038A84D4621BAC33 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		67FBF0D603CDAADF4FA60F48 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		7AA4BC52D83E47A96782A21E /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
@@ -41,17 +48,22 @@
 		9867F4D5244C7964E0EBDC06 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A38F075EB3F59D2CEE584B4D /* MainShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainShell.swift; sourceTree = "<group>"; };
 		A94A9051DFA44317626D096F /* Placeholders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Placeholders.swift; sourceTree = "<group>"; };
+		BFAD0F62AC689EE96DC66A94 /* TopNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopNavBar.swift; sourceTree = "<group>"; };
 		C5EC294D5E473E71065E0C96 /* RaceCorProDrive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RaceCorProDrive.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8A82475D31B351A97DFB64A /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
+		D08B641940B8698C5E481A92 /* DataStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStrip.swift; sourceTree = "<group>"; };
 		D7D4DB503DF2B4CBD9AE4F88 /* TokenLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenLoader.swift; sourceTree = "<group>"; };
 		F98719D267F8AABBC6AFA4B0 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandKit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		27B040DC32ADF9014C4829BD /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
+				1E50424B53305D1A459BB4B9 /* DashboardComponents.swift */,
 				2B5225EBD2C8B643B1FAD536 /* DashboardView.swift */,
+				D08B641940B8698C5E481A92 /* DataStrip.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -79,6 +91,7 @@
 				5EA4B280038A84D4621BAC33 /* LoginView.swift */,
 				A38F075EB3F59D2CEE584B4D /* MainShell.swift */,
 				A94A9051DFA44317626D096F /* Placeholders.swift */,
+				BFAD0F62AC689EE96DC66A94 /* TopNavBar.swift */,
 				27B040DC32ADF9014C4829BD /* Dashboard */,
 				33AB203EBA33D866DA3FEB48 /* Sessions */,
 			);
@@ -108,6 +121,8 @@
 		B29606C365524476FFE44EEB /* DesignSystem */ = {
 			isa = PBXGroup;
 			children = (
+				FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */,
+				3E9169A0287D33B34B3D6AE0 /* ThemeStore.swift */,
 				D7D4DB503DF2B4CBD9AE4F88 /* TokenLoader.swift */,
 				67FBF0D603CDAADF4FA60F48 /* Tokens.swift */,
 			);
@@ -213,8 +228,11 @@
 				45F97197D0B7FE8E3DB79AAE /* APIClient.swift in Sources */,
 				C34D7C9F476A9104D5C11FF9 /* AuthManager.swift in Sources */,
 				380C9E1020F7CD45195754D5 /* AuthSession.swift in Sources */,
+				7DEBB0B616C046100DD47D53 /* BrandKit.swift in Sources */,
 				9F27D10C69A4CBF698BA627D /* ContentView.swift in Sources */,
+				0C512B26B912C8DD9D2473C2 /* DashboardComponents.swift in Sources */,
 				233E8C4933F3F4ED4C575566 /* DashboardView.swift in Sources */,
+				6912ED1A0ECFE3FB7CFF45CD /* DataStrip.swift in Sources */,
 				AEED8917E959011469BD777F /* Log.swift in Sources */,
 				271C56D0553DDDCC45445832 /* LoginView.swift in Sources */,
 				219C7805C9450461BFA32C59 /* MainShell.swift in Sources */,
@@ -224,9 +242,11 @@
 				03C335861472E96057A3DA0A /* RaceCorProDriveApp.swift in Sources */,
 				726D60DBFF058EF18B3E326A /* SessionDetailView.swift in Sources */,
 				0907C48AA4ABD57AB6B97393 /* SessionsView.swift in Sources */,
+				1A47831D5CE6342F5F1DD357 /* ThemeStore.swift in Sources */,
 				437CAEEAE8496AD2D5346689 /* TokenLoader.swift in Sources */,
 				D5803D4801C29C3E07323E6E /* TokenStore.swift in Sources */,
 				447D1F40C0228F9A61A93B1F /* Tokens.swift in Sources */,
+				57E1C43ADB7513BDB3E47498 /* TopNavBar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

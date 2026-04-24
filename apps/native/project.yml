@@ -20,9 +20,13 @@ targets:
         includes:
           - "**/*.swift"
     resources:
-      - path: Resources
-        includes:
-          - "**/*"
+      # Force xcodegen to treat the .xcassets as a single folder
+      # reference rather than recursing in and adding each imageset
+      # separately. Without `type: folder`, a prior generation wrote
+      # each .imageset as its own broken PBX entry (the ? marks in
+      # the navigator), so actool never saw the catalog as one unit.
+      - path: Resources/Assets.xcassets
+        type: folder
     settings:
       BUNDLE_ID: racing.k10motorsports.prodrive.racecor.mac
       PRODUCT_BUNDLE_IDENTIFIER: racing.k10motorsports.prodrive.racecor.mac
@@ -31,6 +35,12 @@ targets:
       INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.sports
       INFOPLIST_KEY_LSSupportsDefaultHandlerForSchemes: true
       INFOPLIST_FILE: Resources/Info.plist.template
+      # Without this, Xcode's asset catalog compiler (actool) never emits
+      # AppIcon.icns into the bundle — the PNGs exist in the .xcassets
+      # source tree but don't get compiled into the product. The Info.plist
+      # CFBundleIconName key then resolves to nothing at runtime and Dock
+      # falls back to the generic app icon.
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       CODE_SIGN_ENTITLEMENTS: Sources/Support/RaceCorProDrive.entitlements
       CODE_SIGN_IDENTITY: "-"
       DEVELOPMENT_TEAM: ""

@@ -7,7 +7,11 @@ struct SessionsView: View {
     @State private var selectedCategory = "all"
     @State private var offset = 0
 
-    let categories = ["all", "road", "oval", "sports", "dirt", "dirt_oval"]
+    // Internal category keys match server; display labels live in
+    // RaceCategoryLabels.display. "road" renders as "Sports Car" (iRacing's
+    // current term). Dropped the stray "sports" + "dirt" entries that
+    // weren't valid category keys.
+    let categories = ["all", "road", "oval", "formula", "dirt_road", "dirt_oval"]
 
     var body: some View {
         ZStack {
@@ -32,7 +36,10 @@ struct SessionsView: View {
                 VStack(spacing: 0) {
                     Picker("Category", selection: $selectedCategory) {
                         ForEach(categories, id: \.self) { category in
-                            Text(category.capitalized).tag(category)
+                            let label = category == "all"
+                                ? "All"
+                                : (RaceCategoryLabels.display[category] ?? category.capitalized)
+                            Text(label).tag(category)
                         }
                     }
                     .pickerStyle(.segmented)

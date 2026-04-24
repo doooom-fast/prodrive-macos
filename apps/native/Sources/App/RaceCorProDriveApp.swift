@@ -24,9 +24,18 @@ struct RaceCorProDriveApp: App {
                     LoginView()
                         .environmentObject(authManager)
                 case .authenticating:
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(nsColor: .controlBackgroundColor))
+                    ZStack {
+                        ThemedBackgroundView()
+                        Palette.bgBase.opacity(0.4).ignoresSafeArea()
+                        VStack(spacing: 12) {
+                            Logomark(height: 56, tone: .color)
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("Opening browser…")
+                                .font(.system(size: 12))
+                                .foregroundColor(Palette.textDim)
+                        }
+                    }
                 case .authenticated(let user):
                     MainShell(user: user)
                         .environmentObject(authManager)
@@ -37,8 +46,27 @@ struct RaceCorProDriveApp: App {
                     await authManager.handleOAuthCallback(url: url)
                 }
             }
+            // Fetch themes at app launch (not just after sign-in) so the
+            // login + authenticating screens already have a real
+            // background image instead of the fallback gradient.
+            .task {
+                await ThemeStore.shared.refresh()
+            }
+            // Force dark appearance across the whole app. The dashboard
+            // design is dark-first (matches the web product) and mixing
+            // light system chrome with dark content looks broken.
+            .preferredColorScheme(.dark)
         }
         .defaultSize(width: 1200, height: 800)
+        // `.hiddenTitleBar` drops the window's title text, and
+        // `.unifiedCompact` toolbar style keeps the title-bar area slim
+        // and merges toolbar items inline with the traffic lights.
+        // Together they give us a compact native header where dashboard
+        // tabs can sit at the same vertical level as the traffic-light
+        // cluster (and flow around the sidebar-collapse button when the
+        // sidebar is hidden).
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("Settings") {
