@@ -130,8 +130,21 @@ struct Dashboard: Codable {
     }
 
     struct CarAffinityEntry: Codable, Identifiable {
+        /// Individual car models grouped under this affinity entry.
+        /// Category brands like "F4" / "GT3" surface the *specific*
+        /// chassis here (e.g. "Tatuus F4 T-014"), which is what
+        /// resolves against the `lookups.cars` table — matching
+        /// against the bare `manufacturer` would miss for every
+        /// category-level brand.
+        struct CarEntry: Codable {
+            let carModel: String
+            let gameName: String
+            let sessionCount: Int
+        }
+
         let manufacturer: String
         let brandKey: String
+        let cars: [CarEntry]?
         let totalSessions: Int
         let totalLaps: Int
         let avgPosition: Double?
@@ -141,6 +154,105 @@ struct Dashboard: Codable {
         let trend: String
 
         var id: String { brandKey }
+    }
+
+    struct TemporalSlice: Codable {
+        let label: String
+        let sessionCount: Int
+        let avgPosition: Double?
+        let avgIRatingDelta: Double?
+        let avgIncidents: Double
+        let winRate: Double
+        let podiumRate: Double
+        let topTenRate: Double
+    }
+
+    struct WhenInsight: Codable, Identifiable {
+        let type: String  // "positive" | "negative" | "neutral"
+        let text: String
+        var id: String { "\(type):\(text)" }
+    }
+
+    struct HeatmapCell: Codable, Identifiable {
+        let day: Int    // 0..6 (Mon..Sun)
+        let hour: Int   // 0..23
+        let score: Double
+        let count: Int
+        var id: String { "\(day)-\(hour)" }
+    }
+
+    struct WhenProfile: Codable {
+        let byHour: [TemporalSlice]          // 24 slots
+        let byDayOfWeek: [TemporalSlice]     // 7 slots, Mon..Sun
+        let bySessionLength: [TemporalSlice]
+        let peakHours: String
+        let peakDays: String
+        let worstHours: String
+        let worstDays: String
+        let peakHourStart: Int
+        let worstHourStart: Int
+        let windowSize: Int
+        let insights: [WhenInsight]
+        let heatmapData: [HeatmapCell]
+    }
+
+    struct NextRaceIdeaEntry: Codable, Identifiable {
+        let seriesName: String
+        let trackName: String
+        let trackConfig: String?
+        let category: String
+        let license: String
+        let official: Bool
+        let fixed: Bool
+        let score: Double
+        let strategy: String
+        let commentary: String
+        let startsAtUtc: String
+        let carClassNames: [String]
+        let seasonId: Int
+        let seriesId: Int
+        let raceLapLimit: Int?
+        let raceTimeLimit: Int?
+
+        var id: String { "\(seriesId)-\(seasonId)-\(startsAtUtc)" }
+    }
+
+    /// Server-pre-computed view-model for the Strengths / Watch Out
+    /// panel. Native renders this verbatim — the computation lives in
+    /// `apps/web/src/lib/when-panel-view.ts` on the server, same lib
+    /// the web component uses. No Swift re-implementation.
+    struct WhenPanelSide: Codable {
+        let days: String
+        let hours: String
+        let avgIRatingDelta: Double?
+        let paragraph: String
+        let bullets: [WhenInsight]
+    }
+
+    struct WhenPanelView: Codable {
+        let strengths: WhenPanelSide?
+        let watchOut: WhenPanelSide?
+    }
+
+    /// 8-axis Driver DNA computed server-side by `computeDriverDNA`.
+    struct DriverDNAData: Codable {
+        let consistency: Double
+        let racecraft: Double
+        let cleanness: Double
+        let endurance: Double
+        let adaptability: Double
+        let improvement: Double
+        let wetWeather: Double
+        let experience: Double
+    }
+
+    /// Archetype label (primary + variant) from `getDriverArchetype`.
+    /// Matches the web exactly — "The Chameleon" / "The Renaissance Driver".
+    struct DriverArchetypeData: Codable {
+        let major: String
+        let variant: String
+        let majorDescription: String?
+        let variantDescription: String?
     }
 
     let stats: Stats
@@ -154,6 +266,87 @@ struct Dashboard: Codable {
     let recentMoments: [MomentEntry]?
     let topTracks: [TrackMasteryEntry]?
     let topCars: [CarAffinityEntry]?
+    /// Track silhouette + image lookups bundled with every dashboard
+    /// response. Server collects these from topTracks, nextRaceIdeas,
+    /// moments, and sessions' referenced tracks. Keyed by case-folded
+    /// track name — use `lookups.track(for:)`.
+    struct TrackLookup: Codable {
+        let key: String
+        let displayName: String
+        let svgPath: String?
+        let logoSvg: String?
+        let imageUrl: String?
+    }
+
+    /// Car brand logo + photo for each referenced car model.
+    struct CarLookup: Codable {
+        let key: String
+        let brandKey: String?
+        let manufacturer: String?
+        let logoSvg: String?
+        let logoPng: String?
+        let color: String?
+        let imageUrl: String?
+    }
+
+    struct Lookups: Codable {
+        let tracks: [TrackLookup]
+        let cars: [CarLookup]
+
+        func track(for name: String?) -> TrackLookup? {
+            guard let name, !name.isEmpty else { return nil }
+            let key = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return tracks.first(where: { $0.key == key })
+        }
+
+        func car(for model: String?) -> CarLookup? {
+            guard let model, !model.isEmpty else { return nil }
+            let key = model.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return cars.first(where: { $0.key == key })
+                ?? cars.first(where: { key.contains($0.brandKey ?? "") })
+        }
+    }
+
+    let when: WhenProfile?
+    let whenPanel: WhenPanelView?
+    let nextRaceIdeas: [NextRaceIdeaEntry]?
+    /// Pre-bucketed Race Schedule scatter data from the server —
+    /// matches `@/lib/scatter-view` in the web repo. Each bucket is
+    /// a (day-of-week, hour) aggregation with session count, summed
+    /// deltas, and avgIncidents. Native renders these verbatim.
+    struct ScatterBucket: Codable, Identifiable {
+        let day: Int           // 0 = Sunday … 6 = Saturday (JS convention)
+        let hour: Int          // 0 … 23
+        let count: Int
+        let irDeltaSum: Double
+        let srDeltaSum: Double
+        let incidentsSum: Double
+        let avgIncidents: Double
+        var id: String { "\(day)-\(hour)" }
+    }
+
+    let driverDNA: DriverDNAData?
+    let driverArchetype: DriverArchetypeData?
+    let lookups: Lookups?
+    let scatterBuckets: [ScatterBucket]?
+
+    /// Sessions bundled into the dashboard payload so native apps
+    /// don't need a second `/api/v1/sessions` fetch. Up to 200 most
+    /// recent. Drives the Race Calendar + Previous Races tab.
+    struct RecentSession: Codable, Identifiable {
+        let id: String
+        let subsessionId: Int
+        let seriesName: String
+        let trackName: String
+        let startTime: Date
+        let duration: Int?
+        let finishPosition: Int?
+        let lapsCompleted: Int?
+        let category: String
+        let carModel: String?
+        let incidentCount: Int?
+    }
+    let recentSessions: [RecentSession]?
 
     // Flat convenience accessors so existing UI code compiles unchanged.
     var totalRaces: Int { stats.totalRaces }

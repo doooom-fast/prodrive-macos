@@ -16,155 +16,224 @@ enum Destination: String, CaseIterable {
     case cars = "Cars"
     case moments = "Moments"
 
-    var icon: String {
+    /// Matches the web's lucide-react icon choice so the two platforms
+    /// feel like one product. Rendered via `LucideIconView` — NOT SF
+    /// Symbols — because SF's closest equivalents drift too far from
+    /// what the web presents (e.g. the built-in `calendar` glyph looks
+    /// nothing like lucide's `calendar-clock`).
+    var lucideIcon: LucideIcon {
         switch self {
-        case .dashboard: return "square.grid.2x2"
-        case .dna: return "atom"
-        case .when: return "calendar"
-        case .tracks: return "map"
-        case .cars: return "car.2"
-        case .moments: return "sparkles"
+        case .dashboard: return .dashboard
+        case .dna:       return .dna
+        case .when:      return .when
+        case .tracks:    return .tracks
+        case .cars:      return .cars
+        case .moments:   return .moments
         }
     }
 }
 
-/// Signed-in chrome. NavigationSplitView with the primary nav on the
-/// left; theme picker + account menu pinned to the sidebar's bottom
-/// rather than the window toolbar (per product direction — the title
-/// bar is intentionally empty so the dashboard's content is the first
-/// thing the eye lands on).
+/// Signed-in chrome. A vertical icon-only rail on the left (iOS-style:
+/// one glyph per destination, no inline labels) with the theme picker
+/// and account avatar pinned to the bottom of the same rail. Hover
+/// tooltips surface the full destination name; the selected item gets
+/// a subtle filled pill so the active page is obvious at a glance.
+///
+/// Deliberately NOT using `NavigationSplitView` / `List(selection:)`:
+/// the sidebar on macOS applies an NSVisualEffectView backdrop SwiftUI
+/// can't override, which fights the themed background behind the rail.
+/// A hand-rolled rail also lets us make each row a perfectly square
+/// icon target without fighting the sidebar list's padding heuristics.
 struct ContentView: View {
-    @State private var selectedDestination: Destination? = .dashboard
-    /// Binding the collapse state to real state (not `.constant(.all)`)
-    /// is what makes the built-in sidebar toggle button actually work.
-    /// Using `.constant` pins the visibility so the toggle is a no-op.
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var selectedDestination: Destination = .dashboard
     @EnvironmentObject var authManager: AuthManager
-    // Observe the theme store so the sidebar theme row updates its
-    // label when the active theme changes (auto-rotate ticks, or user
-    // picks a different theme from the menu).
-    @ObservedObject private var themeStore = ThemeStore.shared
+    @ObservedObject private var themeStore: ThemeStore
     let user: Me
+
+    /// Rail width — narrow enough to read as a decoration, wide enough
+    /// for a 36pt icon target with breathing room on both sides.
+    private static let railWidth: CGFloat = 56
+
+    @MainActor
+    init(user: Me) {
+        self.user = user
+        self.themeStore = .shared
+    }
 
     var body: some View {
         ZStack {
-            // ThemedBackgroundView fills the whole window. An earlier
-            // version used NavigationSplitView, whose sidebar column
-            // has a system-provided NSVisualEffectView backdrop that
-            // SwiftUI can't override — that's why the photo kept
-            // "sticking to the right" side of the window. A custom
-            // HStack lets the image extend edge-to-edge.
             ThemedBackgroundView()
 
             HStack(spacing: 0) {
-                if columnVisibility != .detailOnly {
-                    sidebar
-                        .frame(width: 220)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                }
-                detailView(for: selectedDestination ?? .dashboard)
+                // Rail hugs its content and pins to the TOP of its
+                // column, just beneath the traffic-light cluster. The
+                // outer padding pushes it down clear of the close /
+                // minimize / zoom row so nothing overlaps.
+                rail
+                    .frame(width: Self.railWidth)
+                    .frame(maxHeight: .infinity, alignment: .top)
+
+                detailView(for: selectedDestination)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .animation(.easeInOut(duration: 0.2), value: columnVisibility)
         }
         .ignoresSafeArea(.container, edges: .top)
     }
 
-    /// Toggle the sidebar visibility — called from a toolbar button.
-    private func toggleSidebar() {
-        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-    }
+    // MARK: - Rail
 
-    // MARK: - Sidebar
-
+    /// Short, floating glass rail. Hugs its content vertically, sits
+    /// centered in the window, and uses `.ultraThinMaterial` so the
+    /// themed background photo shows through. Theme + profile sit
+    /// directly below the destinations — no spacer, no full-height
+    /// column, just a compact pill of icons.
     @ViewBuilder
-    private var sidebar: some View {
-        // Floating-panel sidebar. Inset on all four sides so the panel
-        // reads as its own surface hovering over the themed background
-        // rather than an edge-to-edge column. Rounded corners + subtle
-        // border match the dashboard's `.panel()` treatment — one
-        // visual language across sidebar and content panels. The outer
-        // `.padding(.top, 38)` clears the traffic-light cluster; inner
-        // top padding is small since the panel itself starts below them.
-        VStack(spacing: 0) {
-            List(Destination.allCases, id: \.self, selection: $selectedDestination) { dest in
-                NavigationLink(value: dest) {
-                    Label(dest.rawValue, systemImage: dest.icon)
-                }
+    private var rail: some View {
+        VStack(spacing: 6) {
+            ForEach(Destination.allCases, id: \.self) { dest in
+                RailIconButton(
+                    icon: .lucide(dest.lucideIcon),
+                    tooltip: dest.rawValue,
+                    isActive: selectedDestination == dest,
+                    action: { selectedDestination = dest }
+                )
             }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
 
-            Divider().overlay(Palette.borderSubtle)
-
-            sidebarFooter
+            themeRailItem
+            profileRailItem
         }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Palette.bgBase.opacity(0.55))
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.ultraThinMaterial)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Palette.borderSubtle, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
         )
-        .shadow(color: Color.black.opacity(0.35), radius: 20, x: 0, y: 8)
-        .padding(.top, 38)    // clear the traffic-light cluster
-        .padding(.leading, 10)
-        .padding(.bottom, 10)
+        .shadow(color: Color.black.opacity(0.35), radius: 20, x: 0, y: 10)
+        // Clear the traffic-light cluster. The window title bar is
+        // ~28pt tall; 38pt of top padding gives the rail a breath of
+        // space below the close/minimize/zoom row.
+        .padding(.top, 38)
+        .padding(.leading, 12)
     }
 
-    /// Bottom-of-sidebar controls: theme picker + account menu. Both
-    /// use the same `SidebarMenuRow` component so they render
-    /// identically — eliminating the earlier inconsistency where the
-    /// two rows had subtly different chrome because each Menu was
-    /// hand-built.
-    private var sidebarFooter: some View {
-        VStack(spacing: 2) {
-            SidebarMenuRow(
-                title: themeStore.isAutoMode ? "Auto"
-                    : (themeStore.activeSet?.name ?? "Theme"),
-                systemImage: themeStore.isAutoMode ? "shuffle" : "paintpalette"
-            ) {
-                Button {
-                    themeStore.selectedSlug = ThemeStore.auto
-                } label: {
-                    HStack {
-                        Image(systemName: "shuffle")
-                        Text("Auto-rotate")
-                        if themeStore.isAutoMode {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-                Divider()
-                ForEach(themeStore.sets) { set in
-                    Button {
-                        themeStore.selectedSlug = set.slug
-                    } label: {
-                        HStack {
-                            Text(set.name)
-                            if !themeStore.isAutoMode
-                                && set.slug == themeStore.activeSlug {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            }
+    // MARK: - Theme
 
-            SidebarMenuRow(
-                title: user.displayName,
-                systemImage: "person.circle"
-            ) {
-                Text(user.displayName).foregroundStyle(.secondary)
-                if let email = user.email {
-                    Text(email).foregroundStyle(.secondary)
+    @State private var showThemePopover = false
+
+    /// Theme row — a plain `RailIconButton` (same primitive as the
+    /// destinations) that toggles a popover. Earlier iterations used
+    /// `Menu`; even with `.menuStyle(.borderlessButton)`, fixedSize,
+    /// and external frame clamps, the menu's button body added a few
+    /// pixels of internal padding that broke alignment with the
+    /// destination buttons. Popover gives us total control.
+    private var themeRailItem: some View {
+        RailIconButton(
+            icon: .systemImage(themeStore.isAutoMode ? "shuffle" : "paintpalette.fill"),
+            tooltip: themeStore.isAutoMode ? "Theme: Auto-rotate"
+                                           : "Theme: \(themeStore.activeSet?.name ?? "Default")",
+            isActive: false,
+            action: { showThemePopover.toggle() }
+        )
+        .popover(isPresented: $showThemePopover, arrowEdge: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
+                popoverButton(
+                    "Auto-rotate",
+                    icon: "shuffle",
+                    checked: themeStore.isAutoMode
+                ) {
+                    themeStore.selectedSlug = ThemeStore.auto
+                    showThemePopover = false
                 }
-                Divider()
-                Button("Sign Out") { authManager.signOut() }
+                Divider().padding(.vertical, 4)
+                ForEach(themeStore.sets) { set in
+                    popoverButton(
+                        set.name,
+                        icon: nil,
+                        checked: !themeStore.isAutoMode && set.slug == themeStore.activeSlug
+                    ) {
+                        themeStore.selectedSlug = set.slug
+                        showThemePopover = false
+                    }
+                }
             }
+            .padding(8)
+            .frame(minWidth: 180)
         }
-        .padding(8)
+    }
+
+    // MARK: - Profile
+
+    @State private var showProfilePopover = false
+
+    /// Profile row — same Button-based pattern as theme so the rail's
+    /// vertical rhythm stays uniform top to bottom. `Menu` was the
+    /// natural fit semantically but its rendered cell never quite
+    /// matched a Button's, even with frame clamps.
+    private var profileRailItem: some View {
+        RailIconButton(
+            icon: .systemImage("person.fill"),
+            tooltip: user.displayName,
+            isActive: false,
+            action: { showProfilePopover.toggle() }
+        )
+        .popover(isPresented: $showProfilePopover, arrowEdge: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(user.displayName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Palette.textPrimary)
+                if let email = user.email {
+                    Text(email)
+                        .font(.system(size: 11))
+                        .foregroundColor(Palette.textDim)
+                }
+                Divider().padding(.vertical, 4)
+                popoverButton("Sign Out", icon: "arrow.right.square", checked: false) {
+                    showProfilePopover = false
+                    authManager.signOut()
+                }
+            }
+            .padding(10)
+            .frame(minWidth: 200)
+        }
+    }
+
+    /// Standardized popover row — keeps the theme and profile menus
+    /// visually consistent: leading icon (optional), title, trailing
+    /// checkmark for selected state.
+    private func popoverButton(
+        _ title: String,
+        icon: String?,
+        checked: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 11))
+                        .foregroundColor(Palette.textSecondary)
+                        .frame(width: 14)
+                }
+                Text(title)
+                    .font(.system(size: 12))
+                    .foregroundColor(Palette.textPrimary)
+                Spacer(minLength: 8)
+                if checked {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Palette.brand)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Detail
@@ -188,41 +257,85 @@ struct ContentView: View {
     }
 }
 
-/// One-line dropdown menu styled for the sidebar footer. Consistent
-/// chrome for the theme picker + account menu + anything else we add
-/// down there later. Wraps a `Menu` with a hand-rolled label that
-/// matches the sidebar list row metrics (icon → label → trailing
-/// chevron hint) without relying on `List`'s selection styling.
-struct SidebarMenuRow<Content: View>: View {
-    let title: String
-    let systemImage: String
-    @ViewBuilder var menu: () -> Content
+/// Source of the glyph rendered inside a rail cell. Lucide icons drive
+/// the six top-level destinations so they match the web exactly; SF
+/// Symbols still back the theme + profile slots where web doesn't
+/// ship a counterpart.
+enum RailIconSource {
+    case lucide(LucideIcon)
+    case systemImage(String)
+}
+
+/// Shared 36×36 glyph cell used by both tap-to-select destinations
+/// (`RailIconButton`) and tap-to-open-menu slots (theme, profile).
+/// Keeping both flavors on the same label is what makes the whole
+/// rail read as one consistent strip of icons.
+struct RailIconLabel: View {
+    let icon: RailIconSource
+    let isActive: Bool
+    let isHovered: Bool
 
     var body: some View {
-        Menu {
-            menu()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 13))
-                    .foregroundColor(Palette.textSecondary)
-                    .frame(width: 18, alignment: .center)
-                Text(title)
-                    .font(.system(size: 13))
-                    .foregroundColor(Palette.textSecondary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(Palette.textDim)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        glyph
+            .frame(width: 36, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(backgroundFill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(
+                        isActive ? Palette.borderAccent : Color.clear,
+                        lineWidth: 1)
+            )
             .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private var glyph: some View {
+        switch icon {
+        case .lucide(let lucide):
+            // Render at ~22pt inside the 36×36 cell — matches the web
+            // nav's 24px icon at the density the rail wants.
+            LucideIconView(icon: lucide, size: 22, color: iconColor)
+        case .systemImage(let name):
+            Image(systemName: name)
+                .font(.system(size: 16, weight: isActive ? .semibold : .regular))
+                .foregroundColor(iconColor)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+    }
+
+    private var iconColor: Color {
+        if isActive || isHovered { return Palette.textPrimary }
+        return Palette.textSecondary
+    }
+
+    private var backgroundFill: Color {
+        if isActive { return Palette.brand.opacity(0.18) }
+        if isHovered { return Palette.bgElevated.opacity(0.5) }
+        return Color.clear
+    }
+}
+
+/// Single icon button on the vertical rail. 36pt square target, subtle
+/// filled-pill indicator for the active destination, tooltip via
+/// `.help()` so hovering reveals the full name without permanently
+/// spending horizontal rail width on a label.
+struct RailIconButton: View {
+    let icon: RailIconSource
+    let tooltip: String
+    let isActive: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            RailIconLabel(icon: icon, isActive: isActive, isHovered: isHovered)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help(tooltip)
     }
 }
 

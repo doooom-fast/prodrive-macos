@@ -23,10 +23,26 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var authManager: AuthManager
 
-    @State private var dashboard: Dashboard?
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    /// Single source of truth for the dashboard data is now the
+    /// shared `DashboardPoller` — it fetches on an interval, publishes
+    /// on the main actor, and fires notifications for new moments/
+    /// results without us having to do anything here. The view just
+    /// reads `poller.latest` and re-renders when it changes.
+    ///
+    /// Swift 6 strict concurrency: `.shared` is main-actor-isolated,
+    /// so we can't use it as an inline default stored-property value.
+    /// Explicit @MainActor init sidesteps the error.
+    @ObservedObject private var poller: DashboardPoller
     @State private var selectedTab: DashboardTab = .performance
+
+    @MainActor
+    init() {
+        self.poller = .shared
+    }
+
+    private var dashboard: Dashboard? { poller.latest }
+    private var recentSessions: [Dashboard.RecentSession] { poller.sessions }
+    private var isLoadingInitialData: Bool { poller.latest == nil && poller.isPolling }
 
     var body: some View {
         ZStack {
@@ -44,7 +60,8 @@ struct DashboardView: View {
 
                     SidebarTabs(
                         tracks: dashboard?.topTracks ?? [],
-                        cars: dashboard?.topCars ?? []
+                        cars: dashboard?.topCars ?? [],
+                        lookups: dashboard?.lookups
                     )
                     .frame(width: 320)
                 }
@@ -60,13 +77,10 @@ struct DashboardView: View {
                 )
             }
 
-            if isLoading && dashboard == nil {
+            if isLoadingInitialData {
                 ProgressView().controlSize(.large)
-            } else if dashboard == nil, let msg = errorMessage {
-                errorOverlay(msg)
             }
         }
-        .task { await load() }
     }
 
     // MARK: - Main column
@@ -91,79 +105,144 @@ struct DashboardView: View {
                     case .performance:
                         performanceContent
                     case .nextRace:
-                        placeholderTab(title: "Next Race",
-                                       subtitle: "AI-ranked race suggestions",
-                                       icon: "flag")
+                        NextRaceTabContent(
+                            ideas: dashboard?.nextRaceIdeas ?? [],
+                            lookups: dashboard?.lookups
+                        )
                     case .previous:
-                        placeholderTab(title: "Previous Races",
-                                       subtitle: "Chronological race history",
-                                       icon: "clock.arrow.circlepath")
+                        PreviousRacesTabContent(sessions: recentSessions)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
                 .padding(.bottom, 30)
             }
-            .refreshable { await load() }
         }
     }
 
     @ViewBuilder
     private var performanceContent: some View {
         VStack(alignment: .leading, spacing: 14) {
+            shouldYouRacePanel
+            strengthsWatchOutPanel
+
+            // Viz modules stack vertically at full main-column width —
+            // each chart has room to breathe (the horizontal 3-up
+            // layout squeezed them at typical window sizes).
+            VStack(spacing: 14) {
+                RaceCalendarHeatmap(sessions: recentSessions)
+                RaceScheduleScatter(buckets: dashboard?.scatterBuckets ?? [])
+                DriverDNARadar(dashboard: dashboard)
+            }
+        }
+    }
+
+    /// Real "Should You Race Right Now?" verdict + expandable detail.
+    /// Uses the server's `when.peakHourStart` / `worstHourStart` 3-hour
+    /// windows vs the current local hour. The expanded body shows peak
+    /// + worst windows side by side with their respective avg-iR
+    /// deltas, plus a current-time annotation.
+    @ViewBuilder
+    private var shouldYouRacePanel: some View {
+        if let when = dashboard?.when {
+            let hour = Calendar.current.component(.hour, from: Date())
+            let peakRange = when.peakHourStart..<(when.peakHourStart + when.windowSize)
+            let worstRange = when.worstHourStart..<(when.worstHourStart + when.windowSize)
+            let inPeak = peakRange.contains(hour)
+            let inWorst = worstRange.contains(hour)
+
+            let panel = dashboard?.whenPanel
+            let detail = ShouldYouRacePanel.Detail(
+                peakWindow: panel?.strengths.map { "\($0.days), \($0.hours)" },
+                peakDelta: panel?.strengths.flatMap { side in
+                    side.avgIRatingDelta.map { formatDelta($0) }
+                },
+                worstWindow: panel?.watchOut.map { "\($0.days), \($0.hours)" },
+                worstDelta: panel?.watchOut.flatMap { side in
+                    side.avgIRatingDelta.map { formatDelta($0) }
+                },
+                nowDescription: nowAnnotation(hour: hour, inPeak: inPeak, inWorst: inWorst)
+            )
+
+            ShouldYouRacePanel(
+                verdict: inPeak ? .good : inWorst ? .bad : .marginal,
+                title: inPeak ? "Go for it" : inWorst ? "Skip this window" : "Marginal",
+                reason: inPeak
+                    ? "You're in your peak window (\(when.peakHours))."
+                    : inWorst
+                        ? "This is your weakest window (\(when.worstHours))."
+                        : "Not your best or worst — okay to race but temper expectations.",
+                detail: detail
+            )
+        } else {
             ShouldYouRacePanel(
                 verdict: .unknown,
                 title: "Not enough data",
                 reason: "Add a few more races to get a race-now advisory."
             )
+        }
+    }
 
+    /// "Currently 6:18 PM Thursday — inside your peak window." style
+    /// annotation for the expanded ShouldYouRace detail.
+    private func nowAnnotation(hour: Int, inPeak: Bool, inWorst: Bool) -> String {
+        let df = DateFormatter()
+        df.dateFormat = "h:mm a 'on' EEEE"
+        let timeStr = df.string(from: Date())
+        if inPeak  { return "Currently \(timeStr) — inside your peak window." }
+        if inWorst { return "Currently \(timeStr) — inside your weakest window." }
+        return "Currently \(timeStr) — outside both windows."
+    }
+
+    /// Strengths / Watch Out panel. Reads the server-pre-computed
+    /// `whenPanel` view-model — the same object `@/lib/when-panel-view`
+    /// builds for the web component. Zero Swift re-computation; the
+    /// paragraph and bullets are verbatim what the web renders.
+    @ViewBuilder
+    private var strengthsWatchOutPanel: some View {
+        let panel = dashboard?.whenPanel
+        if let strengths = panel?.strengths, let watchOut = panel?.watchOut {
             StrengthsWatchOutPanel(
                 strengths: .init(
                     label: "STRENGTHS",
                     tint: Palette.success,
-                    window: "Coming soon",
-                    footnote: nil,
-                    summary: "Time-of-day and day-of-week performance insights will appear once enough race data is imported.",
-                    bullets: []
+                    window: "\(strengths.days)\n\(strengths.hours)",
+                    footnote: strengths.avgIRatingDelta.map { formatDelta($0) },
+                    summary: strengths.paragraph,
+                    bullets: strengths.bullets.map(\.text)
                 ),
                 watchOut: .init(
                     label: "WATCH OUT",
                     tint: Palette.brand,
-                    window: "Coming soon",
-                    footnote: nil,
-                    summary: "Incident hotspots and risk windows will be surfaced here.",
+                    window: "\(watchOut.days)\n\(watchOut.hours)",
+                    footnote: watchOut.avgIRatingDelta.map { formatDelta($0) },
+                    summary: watchOut.paragraph,
+                    bullets: watchOut.bullets.map(\.text)
+                )
+            )
+        } else {
+            StrengthsWatchOutPanel(
+                strengths: .init(
+                    label: "STRENGTHS", tint: Palette.success,
+                    window: "Collecting data", footnote: nil,
+                    summary: "Run 5+ sessions to see your strongest time windows.",
+                    bullets: []
+                ),
+                watchOut: .init(
+                    label: "WATCH OUT", tint: Palette.brand,
+                    window: "Collecting data", footnote: nil,
+                    summary: "Incident hotspots surface once more sessions are logged.",
                     bullets: []
                 )
             )
-
-            HStack(alignment: .top, spacing: 14) {
-                VizPlaceholder(title: "Race Calendar", subtitle: "Incidents", icon: "calendar")
-                VizPlaceholder(title: "Race Schedule", subtitle: "Incidents", icon: "clock")
-                VizPlaceholder(title: "Driver DNA", subtitle: nil, icon: "atom")
-            }
         }
     }
 
-    private func placeholderTab(title: String, subtitle: String, icon: String) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 28))
-                .foregroundColor(Palette.textMuted)
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Palette.textSecondary)
-            Text(subtitle)
-                .font(.system(size: 12))
-                .foregroundColor(Palette.textDim)
-            Text("Coming in a later pass — this tab isn't populated in the native app yet.")
-                .font(.system(size: 11))
-                .foregroundColor(Palette.textMuted)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: 420)
-        .panel()
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
+    /// Format the iRating window-average delta the web shows under the
+    /// window label ("avg +296 iR"). Matches the web's formatter.
+    private func formatDelta(_ delta: Double) -> String {
+        let sign = delta > 0 ? "+" : ""
+        return "avg \(sign)\(Int(delta.rounded())) iR"
     }
 
     private func toolbarLink(label: String, icon: String) -> some View {
@@ -174,40 +253,6 @@ struct DashboardView: View {
         .foregroundColor(Palette.textDim)
     }
 
-    // MARK: - Error / loading
-
-    private func errorOverlay(_ message: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 28))
-                .foregroundColor(Palette.warning)
-            Text("Can't load your dashboard")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Palette.textPrimary)
-            Text(message)
-                .font(.caption)
-                .foregroundColor(Palette.textDim)
-                .multilineTextAlignment(.center)
-            Button("Retry") { Task { await load() } }
-                .buttonStyle(.borderedProminent)
-                .tint(Palette.brand)
-        }
-        .frame(maxWidth: 400)
-        .panel()
-        .padding(40)
-    }
-
-    private func load() async {
-        isLoading = true
-        errorMessage = nil
-        do {
-            dashboard = try await APIClient.shared.dashboard()
-        } catch {
-            errorMessage = error.localizedDescription
-            Log.error("Failed to load dashboard: \(error)")
-        }
-        isLoading = false
-    }
 }
 
 #Preview {

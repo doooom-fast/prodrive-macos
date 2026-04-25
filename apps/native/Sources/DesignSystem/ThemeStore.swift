@@ -258,6 +258,12 @@ final class ThemeStore: ObservableObject {
 struct ThemedBackgroundView: View {
     @ObservedObject private var store: ThemeStore
 
+    // `@MainActor` on the init because the default argument reads
+    // `ThemeStore.shared`, and `shared` is main-actor-isolated. Without
+    // this annotation, Swift 6 rejects the default-value expression
+    // at any non-MainActor call site. Views always construct on the
+    // main actor in practice, so this is transparent at callsites.
+    @MainActor
     init(store: ThemeStore = .shared) {
         self.store = store
     }
@@ -317,7 +323,15 @@ struct ThemedBackgroundView: View {
 /// Menu-button theme picker. "Auto" cycles the livery image every few
 /// minutes (default mode on first launch). Any specific theme pins it.
 struct ThemePicker: View {
-    @ObservedObject private var store: ThemeStore = .shared
+    // Explicit @MainActor init because `ThemeStore.shared` is main-
+    // actor-isolated; using it as a default stored-property value
+    // trips Swift 6's strict concurrency rules.
+    @ObservedObject private var store: ThemeStore
+
+    @MainActor
+    init() {
+        self.store = .shared
+    }
 
     private var currentLabel: String {
         if store.isAutoMode { return "Auto" }
