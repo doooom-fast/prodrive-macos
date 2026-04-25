@@ -6,7 +6,6 @@ Common entry points:
 - Repo overview: [`agents/prodrive-macos/CLAUDE.md`](agents/prodrive-macos/CLAUDE.md)
 - Cross-repo context: [`agents/prodrive-context/`](agents/prodrive-context/)
 - Native (Swift) app: [`agents/prodrive-macos/apps/native/CLAUDE.md`](agents/prodrive-macos/apps/native/CLAUDE.md)
-- Shell: [`agents/prodrive-macos/apps/shell/CLAUDE.md`](agents/prodrive-macos/apps/shell/CLAUDE.md)
 
 To pull updates:
 ```bash

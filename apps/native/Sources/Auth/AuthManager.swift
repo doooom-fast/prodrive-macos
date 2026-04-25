@@ -49,11 +49,7 @@ final class AuthManager: ObservableObject {
     private let apiClient: APIClient
 
     private let clientId = "racing.k10motorsports.prodrive.racecor.mac"
-    // Uses `racecor-native://` (not `racecor-prodrive://`) to avoid colliding
-    // with the Electron shell at Launch Services: the shell's dev mode
-    // registers its node_modules Electron as the `racecor-prodrive://`
-    // handler, which then catches the native app's OAuth callback and shows
-    // Electron's default welcome page instead of routing to this app.
+    // All native apps share the `racecor-native://` deep-link namespace.
     private let redirectUri = "racecor-native://auth"
 
     init() {
