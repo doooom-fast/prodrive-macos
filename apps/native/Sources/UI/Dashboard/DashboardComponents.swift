@@ -215,10 +215,28 @@ struct StrengthsWatchOutPanel: View {
     let strengths: Side
     let watchOut: Side
 
+    /// Detects iPhone portrait width where two 110pt+body columns
+    /// won't fit side-by-side. The env key returns nil on macOS, which
+    /// leaves the default (regular) HStack layout untouched there.
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
     var body: some View {
-        HStack(alignment: .top, spacing: 24) {
-            column(strengths, icon: "minus")
-            column(watchOut, icon: "arrow.down.right")
+        Group {
+            if sizeClass == .compact {
+                // iPhone portrait — stack vertically with a hairline
+                // divider between the two halves so the eye still
+                // reads them as a paired "strengths / watch out".
+                VStack(alignment: .leading, spacing: 14) {
+                    column(strengths, icon: "minus")
+                    Divider().overlay(Palette.borderSubtle)
+                    column(watchOut, icon: "arrow.down.right")
+                }
+            } else {
+                HStack(alignment: .top, spacing: 24) {
+                    column(strengths, icon: "minus")
+                    column(watchOut, icon: "arrow.down.right")
+                }
+            }
         }
         .panel()
     }
@@ -413,6 +431,20 @@ struct SidebarTabs: View {
                 .padding(.bottom, 20)
             }
         }
+        // Glass panel — same ultraThinMaterial backdrop + white-
+        // opacity edge the left rail uses, so the two chrome surfaces
+        // read as a matched pair bracketing the dashboard. Tracks +
+        // Cars tabs live INSIDE this glass so the whole column (header
+        // row + scroll content) sits on one continuous frosted field.
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.35), radius: 20, x: 0, y: 10)
     }
 }
 

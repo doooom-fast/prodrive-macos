@@ -54,16 +54,20 @@ struct DashboardView: View {
                     mainColumn
                         .frame(maxWidth: .infinity)
 
-                    Rectangle()
-                        .fill(Palette.borderSubtle)
-                        .frame(width: 1)
-
+                    // Glass sidebar is its own floating panel now —
+                    // drop the vertical hairline that used to live
+                    // between it and the main column, and give the
+                    // panel breathing room on all four sides so its
+                    // rounded corners + shadow render cleanly.
                     SidebarTabs(
                         tracks: dashboard?.topTracks ?? [],
                         cars: dashboard?.topCars ?? [],
                         lookups: dashboard?.lookups
                     )
                     .frame(width: 320)
+                    .padding(.top, 8)
+                    .padding(.trailing, 12)
+                    .padding(.bottom, 10)
                 }
                 .frame(maxHeight: .infinity)
 

@@ -42,7 +42,13 @@ struct DataStrip: View {
             // the full width instead of ending under "CARS".
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        // Zero leading padding so the first column (RACES) sits flush
+        // against the detail view's left edge — that's what makes the
+        // strip feel connected to the rail on its left. Trailing
+        // padding kept so the last column has breathing room before
+        // the sidebar.
+        .padding(.leading, 0)
+        .padding(.trailing, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 56)
         // Hairline at the TOP edge — the strip is bottom-aligned in the

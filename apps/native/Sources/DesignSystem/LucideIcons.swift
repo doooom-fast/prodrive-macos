@@ -119,7 +119,7 @@ struct LucideIconView: View {
             // clock can overlap. Drawn as a single multi-segment path
             // following the lucide source literally.
             p.move(to: .init(x: 21 * s, y: 7.5 * s))
-            p.line(to: .init(x: 21 * s, y: 6 * s))
+            p.addLine(to: .init(x: 21 * s, y: 6 * s))
             p.arcRel(
                 from: .init(x: 21, y: 6),
                 radius: 2,
@@ -127,7 +127,7 @@ struct LucideIconView: View {
                 sweep: false,
                 delta: .init(x: -2, y: -2),
                 s: s)
-            p.line(to: .init(x: 5 * s, y: 4 * s))
+            p.addLine(to: .init(x: 5 * s, y: 4 * s))
             p.arcRel(
                 from: .init(x: 5, y: 4),
                 radius: 2,
@@ -135,7 +135,7 @@ struct LucideIconView: View {
                 sweep: false,
                 delta: .init(x: -2, y: 2),
                 s: s)
-            p.line(to: .init(x: 3 * s, y: 20 * s))
+            p.addLine(to: .init(x: 3 * s, y: 20 * s))
             p.arcRel(
                 from: .init(x: 3, y: 20),
                 radius: 2,
@@ -143,10 +143,10 @@ struct LucideIconView: View {
                 sweep: false,
                 delta: .init(x: 2, y: 2),
                 s: s)
-            p.line(to: .init(x: 8.5 * s, y: 22 * s))
+            p.addLine(to: .init(x: 8.5 * s, y: 22 * s))
             // Horizontal divider below the calendar title.
             p.move(to: .init(x: 3 * s, y: 10 * s))
-            p.line(to: .init(x: 8 * s, y: 10 * s))
+            p.addLine(to: .init(x: 8 * s, y: 10 * s))
             // Clock circle.
             p.addEllipse(in: CGRect(x: 10, y: 10, width: 12, height: 12).scaled(by: s))
 
@@ -186,14 +186,14 @@ struct LucideIconView: View {
             // Chassis silhouette with two wheel wells.
             // SVG: M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2
             p.move(to: .init(x: 19 * s, y: 17 * s))
-            p.line(to: .init(x: 21 * s, y: 17 * s))
+            p.addLine(to: .init(x: 21 * s, y: 17 * s))
             p.cubicRel(
                 from: .init(x: 21, y: 17),
                 c1: .init(x: 0.6, y: 0),
                 c2: .init(x: 1, y: -0.4),
                 to: .init(x: 1, y: -1),
                 s: s)
-            p.line(to: .init(x: 22 * s, y: 13 * s))
+            p.addLine(to: .init(x: 22 * s, y: 13 * s))
             p.cubicRel(
                 from: .init(x: 22, y: 13),
                 c1: .init(x: 0, y: -0.9),
@@ -217,14 +217,14 @@ struct LucideIconView: View {
                 c2: .init(x: -1.1, y: -0.7),
                 to: .init(x: -1.8, y: -0.7),
                 s: s)
-            p.line(to: .init(x: 5 * s, y: 7 * s))
+            p.addLine(to: .init(x: 5 * s, y: 7 * s))
             p.cubicRel(
                 from: .init(x: 5, y: 7),
                 c1: .init(x: -0.6, y: 0),
                 c2: .init(x: -1.1, y: 0.4),
                 to: .init(x: -1.4, y: 0.9),
                 s: s)
-            p.line(to: .init(x: 2.2 * s, y: 10.8 * s))
+            p.addLine(to: .init(x: 2.2 * s, y: 10.8 * s))
             p.arcRel(
                 from: .init(x: 2.2, y: 10.8),
                 radius: 3.7,
@@ -232,19 +232,19 @@ struct LucideIconView: View {
                 sweep: false,
                 delta: .init(x: -0.2, y: 1.2),
                 s: s)
-            p.line(to: .init(x: 2 * s, y: 16 * s))
+            p.addLine(to: .init(x: 2 * s, y: 16 * s))
             p.cubicRel(
                 from: .init(x: 2, y: 16),
                 c1: .init(x: 0, y: 0.6),
                 c2: .init(x: 0.4, y: 1),
                 to: .init(x: 1, y: 1),
                 s: s)
-            p.line(to: .init(x: 5 * s, y: 17 * s))
+            p.addLine(to: .init(x: 5 * s, y: 17 * s))
             // Front wheel.
             p.addEllipse(in: CGRect(x: 5, y: 15, width: 4, height: 4).scaled(by: s))
             // Axle.
             p.move(to: .init(x: 9 * s, y: 17 * s))
-            p.line(to: .init(x: 15 * s, y: 17 * s))
+            p.addLine(to: .init(x: 15 * s, y: 17 * s))
             // Rear wheel.
             p.addEllipse(in: CGRect(x: 15, y: 15, width: 4, height: 4).scaled(by: s))
 
@@ -253,7 +253,7 @@ struct LucideIconView: View {
             // anchored at x=4.
             // SVG: M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528
             p.move(to: .init(x: 4 * s, y: 22 * s))
-            p.line(to: .init(x: 4 * s, y: 4 * s))
+            p.addLine(to: .init(x: 4 * s, y: 4 * s))
             p.arcRel(
                 from: .init(x: 4, y: 4),
                 radius: 1,
@@ -287,7 +287,7 @@ struct LucideIconView: View {
                 sweep: true,
                 delta: .init(x: 1.6, y: 0.8),
                 s: s)
-            p.line(to: .init(x: 20 * s, y: 14 * s))
+            p.addLine(to: .init(x: 20 * s, y: 14 * s))
             p.arcRel(
                 from: .init(x: 20, y: 14),
                 radius: 1,
@@ -320,7 +320,7 @@ struct LucideIconView: View {
             // `user` glyph: rounded trapezoid for the shoulders and a
             // circle for the head.
             p.move(to: .init(x: 19 * s, y: 21 * s))
-            p.line(to: .init(x: 19 * s, y: 19 * s))
+            p.addLine(to: .init(x: 19 * s, y: 19 * s))
             p.arcRel(
                 from: .init(x: 19, y: 19),
                 radius: 4,
@@ -328,7 +328,7 @@ struct LucideIconView: View {
                 sweep: false,
                 delta: .init(x: -4, y: -4),
                 s: s)
-            p.line(to: .init(x: 9 * s, y: 15 * s))
+            p.addLine(to: .init(x: 9 * s, y: 15 * s))
             p.arcRel(
                 from: .init(x: 9, y: 15),
                 radius: 4,
@@ -336,7 +336,7 @@ struct LucideIconView: View {
                 sweep: false,
                 delta: .init(x: -4, y: 4),
                 s: s)
-            p.line(to: .init(x: 5 * s, y: 21 * s))
+            p.addLine(to: .init(x: 5 * s, y: 21 * s))
             p.addEllipse(in: CGRect(x: 8, y: 3, width: 8, height: 8).scaled(by: s))
 
         case .moments:
@@ -346,19 +346,19 @@ struct LucideIconView: View {
             // smooth 4-pointed burst; we approximate with Bezier
             // segments matching the lucide rendering).
             p.move(to: .init(x: 12 * s, y: 2 * s))
-            p.line(to: .init(x: 13.051 * s, y: 8.37 * s))
-            p.line(to: .init(x: 19.188 * s, y: 9.43 * s))
-            p.line(to: .init(x: 13.051 * s, y: 10.482 * s))
-            p.line(to: .init(x: 12 * s, y: 16.812 * s))
-            p.line(to: .init(x: 10.949 * s, y: 10.482 * s))
-            p.line(to: .init(x: 4.812 * s, y: 9.43 * s))
-            p.line(to: .init(x: 10.949 * s, y: 8.37 * s))
+            p.addLine(to: .init(x: 13.051 * s, y: 8.37 * s))
+            p.addLine(to: .init(x: 19.188 * s, y: 9.43 * s))
+            p.addLine(to: .init(x: 13.051 * s, y: 10.482 * s))
+            p.addLine(to: .init(x: 12 * s, y: 16.812 * s))
+            p.addLine(to: .init(x: 10.949 * s, y: 10.482 * s))
+            p.addLine(to: .init(x: 4.812 * s, y: 9.43 * s))
+            p.addLine(to: .init(x: 10.949 * s, y: 8.37 * s))
             p.closeSubpath()
             // Small cross decoration (top right).
             p.move(to: .init(x: 20 * s, y: 2 * s))
-            p.line(to: .init(x: 20 * s, y: 6 * s))
+            p.addLine(to: .init(x: 20 * s, y: 6 * s))
             p.move(to: .init(x: 22 * s, y: 4 * s))
-            p.line(to: .init(x: 18 * s, y: 4 * s))
+            p.addLine(to: .init(x: 18 * s, y: 4 * s))
             // Bottom-left dot (rendered as a tiny circle).
             p.addEllipse(in: CGRect(x: 2, y: 18, width: 4, height: 4).scaled(by: s))
         }

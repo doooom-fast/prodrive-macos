@@ -23,6 +23,7 @@
 		57E1C43ADB7513BDB3E47498 /* TopNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFAD0F62AC689EE96DC66A94 /* TopNavBar.swift */; };
 		57E755D20204DADE545E6FB5 /* DashboardPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24A237CB01F91C5AC0500137 /* DashboardPoller.swift */; };
 		6912ED1A0ECFE3FB7CFF45CD /* DataStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08B641940B8698C5E481A92 /* DataStrip.swift */; };
+		6DE456951DB0865E7C9A254C /* LucideIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30898D4C5F0B0A02150AFD /* LucideIcons.swift */; };
 		6F7ECFAEAC4F612CFA8CD844 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3024FC7A8F1391E2A2FF3666 /* Models.swift */; };
 		726D60DBFF058EF18B3E326A /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10DF9C8DF9A2EC4F1A185DB4 /* SessionDetailView.swift */; };
 		7DEBB0B616C046100DD47D53 /* BrandKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */; };
@@ -57,6 +58,7 @@
 		A009234313455C3C3A82684C /* DashboardVisualizations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardVisualizations.swift; sourceTree = "<group>"; };
 		A38F075EB3F59D2CEE584B4D /* MainShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainShell.swift; sourceTree = "<group>"; };
 		A94A9051DFA44317626D096F /* Placeholders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Placeholders.swift; sourceTree = "<group>"; };
+		AA30898D4C5F0B0A02150AFD /* LucideIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LucideIcons.swift; sourceTree = "<group>"; };
 		BFAD0F62AC689EE96DC66A94 /* TopNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopNavBar.swift; sourceTree = "<group>"; };
 		C4C4D2DDC97CD63DAC5A6AF6 /* NotificationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationCoordinator.swift; sourceTree = "<group>"; };
 		C5EC294D5E473E71065E0C96 /* RaceCorProDrive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RaceCorProDrive.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -135,6 +137,7 @@
 			children = (
 				0EA72EA57C3FB26E56CD1D92 /* BrandAssets.swift */,
 				FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */,
+				AA30898D4C5F0B0A02150AFD /* LucideIcons.swift */,
 				3E9169A0287D33B34B3D6AE0 /* ThemeStore.swift */,
 				D7D4DB503DF2B4CBD9AE4F88 /* TokenLoader.swift */,
 				67FBF0D603CDAADF4FA60F48 /* Tokens.swift */,
@@ -248,6 +251,7 @@
 				6912ED1A0ECFE3FB7CFF45CD /* DataStrip.swift in Sources */,
 				AEED8917E959011469BD777F /* Log.swift in Sources */,
 				271C56D0553DDDCC45445832 /* LoginView.swift in Sources */,
+				6DE456951DB0865E7C9A254C /* LucideIcons.swift in Sources */,
 				219C7805C9450461BFA32C59 /* MainShell.swift in Sources */,
 				6F7ECFAEAC4F612CFA8CD844 /* Models.swift in Sources */,
 				0C2E85FBED94E5474A5B3DE1 /* NextRaceTabs.swift in Sources */,

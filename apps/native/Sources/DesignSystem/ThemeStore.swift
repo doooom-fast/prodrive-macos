@@ -258,14 +258,14 @@ final class ThemeStore: ObservableObject {
 struct ThemedBackgroundView: View {
     @ObservedObject private var store: ThemeStore
 
-    // `@MainActor` on the init because the default argument reads
-    // `ThemeStore.shared`, and `shared` is main-actor-isolated. Without
-    // this annotation, Swift 6 rejects the default-value expression
-    // at any non-MainActor call site. Views always construct on the
-    // main actor in practice, so this is transparent at callsites.
+    // `@MainActor` alone isn't enough on Swift 6: the default-value
+    // expression `ThemeStore.shared` is evaluated at the caller's
+    // isolation context, not the init's. The fix is to make the
+    // parameter optional and resolve `.shared` inside the body where
+    // MainActor isolation is in effect.
     @MainActor
-    init(store: ThemeStore = .shared) {
-        self.store = store
+    init(store: ThemeStore? = nil) {
+        self.store = store ?? .shared
     }
 
     var body: some View {
