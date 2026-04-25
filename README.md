@@ -1,37 +1,55 @@
 # RaceCor Pro Drive — macOS
 
-The macOS native app for [RaceCor Pro Drive](https://prodrive.racecor.io). Lives under `apps/native/` so a future second target can sit alongside it without a restructure.
+Native SwiftUI + AppKit application for RaceCor Pro Drive on macOS 14+.
 
-| App | Path | Stack |
-|---|---|---|
-| Native | `apps/native/` | SwiftUI + AppKit, macOS 14+. Fully native chrome, Keychain tokens, PKCE Discord via `ASWebAuthenticationSession`. |
+## Getting Started
 
-The app has its own `README.md`, `CLAUDE.md`, and `next-steps.md` inside its directory.
+Install XcodeGen, generate the Xcode project, and open it:
 
-## Repo layout
-
-```
-racecor-prodrive-macos/
-├── apps/
-│   └── native/              SwiftUI/AppKit mac app
-├── README.md                (this file)
-└── CLAUDE.md                architecture notes for future Claude sessions
+```bash
+brew install xcodegen
+xcodegen generate
+open RaceCorProDrive.xcodeproj
 ```
 
-Cross-cutting docs for the whole native-apps program live one directory up:
+## Building
 
-- `../native-apps-plan.md` — the master plan
-- `../native-apps-api-contract.md` — `/api/v1/*` endpoint catalogue
+Build in Xcode:
+- Scheme: `RaceCorProDrive-Debug` (development with local logging)
+- Scheme: `RaceCorProDrive-Release` (release build)
 
-## Working on the app
+Or via command line:
 
-- `cd apps/native` and follow the inner `README.md`.
-- Nothing is shared at the package level yet. If a shared dependency emerges (e.g. a native-auth Swift package), add `packages/<name>/` at the root and move shared code there.
+```bash
+xcodebuild -scheme RaceCorProDrive-Debug -destination 'platform=macOS'
+```
 
-## Apple Developer setup
+## Deployment
 
-- A Mac App Store Distribution certificate (TestFlight + Store)
-- Notarization via `xcrun notarytool`
+1. **Developer ID Certificate**: Register a Developer ID certificate in Apple Developer portal for code signing.
+2. **Notarization**: Submit builds to Apple Notary Service:
+   ```bash
+   xcrun notarytool submit app.zip --apple-id user@example.com --team-id XXXXXXXXXX --password <app-specific-password>
+   ```
+3. **Distribution**: Submit via App Store Connect or distribute as a notarized DMG.
 
-You mentioned you'll handle cert generation. Bundle ID baked in:
-- Native: `racing.k10motorsports.prodrive.racecor.mac`
+## Architecture
+
+- **@Observable** pattern for AuthManager state
+- **ASWebAuthenticationSession** for OAuth (shares Safari cookies, passes App Review)
+- **PKCE** for secure authorization code flow
+- **Keychain** for token storage (not UserDefaults)
+- **Task-driven** data fetching with SwiftUI `.task {}`
+- **NavigationSplitView** for sidebar navigation
+
+## Configuration
+
+Dev override for API endpoint via UserDefaults:
+
+```swift
+UserDefaults.standard.set("https://api.example.local", forKey: "racecor.dev.baseURL")
+```
+
+## Next Steps
+
+See `next-steps.md` for roadmap (Moments, DNA, MenuBarExtra, widgets, Continuity).

@@ -66,7 +66,7 @@ Detail content is multi-column on wide screens:
 
 ## Component catalog
 
-All in `apps/native/Sources/DesignSystem/BrandKit.swift` or `Sources/UI/Dashboard/DashboardComponents.swift`.
+All in `Sources/DesignSystem/BrandKit.swift` or `Sources/UI/Dashboard/DashboardComponents.swift`.
 
 - **`Logomark(height:tone:)`** — RaceCor mark rendered as pure SwiftUI Paths from SVG coordinates. Do NOT use asset catalogs for logos; the pipeline has silent failure modes.
 - **`Sparkline(values:trend:)`** — SwiftUI `Canvas` line chart. Trend drives color: up=success, down=brand, flat=textDim.
