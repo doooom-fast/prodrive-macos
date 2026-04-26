@@ -35,6 +35,19 @@ struct DashboardView: View {
     @ObservedObject private var poller: DashboardPoller
     @State private var selectedTab: DashboardTab = .performance
 
+    /// Server-canonical Race-Now verdict. Re-fetched via CalcClient
+    /// whenever the underlying `when` profile changes (i.e. on every
+    /// dashboard poll that updates the When-engine state). The view
+    /// renders `evaluation.verdict` + `evaluation.detail` verbatim —
+    /// no local synthesis from peak/worst hour ranges. Same numbers
+    /// as the web dashboard's ShouldIRaceNow chip.
+    @State private var raceNowEvaluation: RaceNowEvaluation?
+    @State private var raceNowAlternatives: [RaceNowAlternative] = []
+    /// Last error from the race-now fetch — surfaced in the UI when
+    /// the verdict can't load, so failures are visible instead of
+    /// stuck on "Calculating…" forever.
+    @State private var raceNowError: String?
+
     @MainActor
     init() {
         self.poller = .shared
@@ -84,6 +97,13 @@ struct DashboardView: View {
             if isLoadingInitialData {
                 ProgressView().controlSize(.large)
             }
+        }
+        // Refetch the canonical Race-Now verdict whenever the When
+        // profile shifts — new poll, hour rollover, login change.
+        // Keying on peakHourStart (a primitive Int) keeps the task id
+        // hashable without requiring WhenProfile to conform to Hashable.
+        .task(id: dashboard?.when?.peakHourStart) {
+            await refreshRaceNow()
         }
     }
 
@@ -141,21 +161,26 @@ struct DashboardView: View {
         }
     }
 
-    /// Real "Should You Race Right Now?" verdict + expandable detail.
-    /// Uses the server's `when.peakHourStart` / `worstHourStart` 3-hour
-    /// windows vs the current local hour. The expanded body shows peak
-    /// + worst windows side by side with their respective avg-iR
-    /// deltas, plus a current-time annotation.
+    /// "Should You Race Right Now?" panel — verdict + detail rendered
+    /// verbatim from the server's `/api/v1/calc/race-now` evaluation.
+    ///
+    /// We deliberately do NOT synthesize verdict from peak/worst hour
+    /// ranges locally — that's what produced the old "Marginal" result
+    /// when the canonical server verdict for the same moment was
+    /// "risky" (different inputs: server uses incident rate + win rate
+    /// + position data; the old local check only saw hour membership).
+    /// Native and web now display identical strings + numbers because
+    /// they share the same compute path.
     @ViewBuilder
     private var shouldYouRacePanel: some View {
         if let when = dashboard?.when {
+            let panel = dashboard?.whenPanel
             let hour = Calendar.current.component(.hour, from: Date())
             let peakRange = when.peakHourStart..<(when.peakHourStart + when.windowSize)
             let worstRange = when.worstHourStart..<(when.worstHourStart + when.windowSize)
             let inPeak = peakRange.contains(hour)
             let inWorst = worstRange.contains(hour)
 
-            let panel = dashboard?.whenPanel
             let detail = ShouldYouRacePanel.Detail(
                 peakWindow: panel?.strengths.map { "\($0.days), \($0.hours)" },
                 peakDelta: panel?.strengths.flatMap { side in
@@ -168,22 +193,104 @@ struct DashboardView: View {
                 nowDescription: nowAnnotation(hour: hour, inPeak: inPeak, inWorst: inWorst)
             )
 
-            ShouldYouRacePanel(
-                verdict: inPeak ? .good : inWorst ? .bad : .marginal,
-                title: inPeak ? "Go for it" : inWorst ? "Skip this window" : "Marginal",
-                reason: inPeak
-                    ? "You're in your peak window (\(when.peakHours))."
-                    : inWorst
-                        ? "This is your weakest window (\(when.worstHours))."
-                        : "Not your best or worst — okay to race but temper expectations.",
-                detail: detail
-            )
+            if let evaluation = raceNowEvaluation {
+                ShouldYouRacePanel(
+                    verdict: mapServerVerdict(evaluation.verdict),
+                    // Render server's pre-rendered strings verbatim —
+                    // both `headline` (chip title) and `detail` (subtitle)
+                    // come straight from /api/v1/calc/race-now so native
+                    // and web display identical copy for the same user.
+                    title: evaluation.headline,
+                    reason: evaluation.detail,
+                    detail: detail
+                )
+            } else if let err = raceNowError {
+                // Surface the actual error so we can debug instead of
+                // sitting on "Calculating…" forever. Yellow .marginal so
+                // it's visually distinct from a real risky verdict.
+                ShouldYouRacePanel(
+                    verdict: .marginal,
+                    title: "Verdict unavailable",
+                    reason: err,
+                    detail: detail
+                )
+            } else {
+                // Fetch in flight.
+                ShouldYouRacePanel(
+                    verdict: .unknown,
+                    title: "Calculating…",
+                    reason: "Loading current race-now verdict from server.",
+                    detail: detail
+                )
+            }
         } else {
             ShouldYouRacePanel(
                 verdict: .unknown,
                 title: "Not enough data",
                 reason: "Add a few more races to get a race-now advisory."
             )
+        }
+    }
+
+    /// Server verdict vocabulary: `'good' | 'marginal' | 'risky' | 'insufficient'`.
+    /// Native ShouldYouRacePanel.Verdict: `.good | .marginal | .bad | .unknown`.
+    private func mapServerVerdict(_ verdict: String) -> ShouldYouRacePanel.Verdict {
+        switch verdict {
+        case "good":     return .good
+        case "marginal": return .marginal
+        case "risky":    return .bad
+        default:         return .unknown   // "insufficient" or unrecognised
+        }
+    }
+
+    /// Refetches the canonical race-now verdict from web-api. Triggered
+    /// by `.task(id:)` whenever the dashboard's `when` profile changes —
+    /// new poll cycle, hour rollover (when peakHourStart shifts), or
+    /// initial load. The server's verdict only changes on hour boundaries
+    /// so polling every dashboard cycle is acceptable; per-tick polling
+    /// would be wasteful.
+    private func refreshRaceNow() async {
+        guard let when = dashboard?.when else {
+            await MainActor.run {
+                raceNowEvaluation = nil
+                raceNowAlternatives = []
+                raceNowError = nil
+            }
+            return
+        }
+        do {
+            // Bridge: dashboard.when (typed `Dashboard.WhenProfile`) and
+            // calc API's profile (opaque `JSONValue`) are shape-compatible
+            // — both come from the same server-side `computeWhenProfile`.
+            // Round-trip through JSON to cross the typed↔opaque boundary.
+            let encoded = try JSONEncoder().encode(when)
+            let opaque = try JSONDecoder().decode(JSONValue.self, from: encoded)
+            // Pass the user's IANA timezone so the verdict is computed
+            // for THEIR local hour, not UTC. Server falls back to UTC
+            // when this is missing — that's why the native chip read
+            // "near 11 PM" while web read "near 5 PM" for the same
+            // moment in Mountain Time.
+            let timeZone = TimeZone.current.identifier
+            Log.info("[CalcClient] race-now fetch starting (profile bytes=\(encoded.count), tz=\(timeZone))")
+            let response = try await CalcClient.shared.raceNow(profile: opaque, timeZone: timeZone)
+            await MainActor.run {
+                raceNowEvaluation = response.evaluation
+                raceNowAlternatives = response.alternatives
+                // Server returned 200 but evaluation may still be null
+                // (insufficient data, etc). Surface that distinctly so
+                // the UI doesn't sit on "Calculating…".
+                raceNowError = response.evaluation == nil
+                    ? "Server returned no evaluation (insufficient data)"
+                    : nil
+            }
+            Log.info("[CalcClient] race-now fetch ok — verdict=\(response.evaluation?.verdict ?? "nil")")
+        } catch {
+            Log.error("[CalcClient] race-now fetch failed: \(error)")
+            await MainActor.run {
+                raceNowEvaluation = nil
+                raceNowAlternatives = []
+                raceNowError = error.localizedDescription
+            }
         }
     }
 

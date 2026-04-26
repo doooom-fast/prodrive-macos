@@ -245,15 +245,30 @@ struct RaceNowResponse: Codable {
 
 struct RaceNowEvaluation: Codable {
     var verdict: String  // "good" | "marginal" | "risky" | "insufficient"
+    /// Short verdict text for the chip itself, e.g. "Risky window".
+    /// Required field per `apps/web-api/src/calc/race-now-verdict.ts` —
+    /// missing this caused the macOS panel to fail with "data couldn't
+    /// be read because it is missing".
+    var headline: String
+    /// One-sentence explanation suitable for a subtitle, e.g.
+    /// "7.8 inc/race near 4 PM (+1.5 vs your avg) • P16.5 avg finish".
     var detail: String
+    /// Raw numbers exposed for a "details" panel — kept opaque since
+    /// the server's stats shape is large + evolving (currentHour,
+    /// hourSampleCount, hourAvgIncidents, dayAvgPosition, etc.).
     var stats: JSONValue
 }
 
+/// Server type: `PracticeAlternative` from
+/// `apps/web-api/src/calc/race-now-verdict.ts`. Wire field names —
+/// `kind`, `title`, `detail`, `trackName?`, `carModel?` — not the
+/// `label`/`reason` placeholders the earlier scaffold used.
 struct RaceNowAlternative: Codable {
-    var label: String
-    var trackName: String
-    var carModel: String
-    var reason: String
+    var kind: String        // "practice" | "time-trial" | "hot-lap"
+    var title: String
+    var detail: String
+    var trackName: String?
+    var carModel: String?
 }
 
 // MARK: - 7. Race summary
