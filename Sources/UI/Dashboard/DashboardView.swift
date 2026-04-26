@@ -43,6 +43,10 @@ struct DashboardView: View {
     /// as the web dashboard's ShouldIRaceNow chip.
     @State private var raceNowEvaluation: RaceNowEvaluation?
     @State private var raceNowAlternatives: [RaceNowAlternative] = []
+    /// Last error from the race-now fetch — surfaced in the UI when
+    /// the verdict can't load, so failures are visible instead of
+    /// stuck on "Calculating…" forever.
+    @State private var raceNowError: String?
 
     @MainActor
     init() {
@@ -196,10 +200,18 @@ struct DashboardView: View {
                     reason: evaluation.detail,
                     detail: detail
                 )
+            } else if let err = raceNowError {
+                // Surface the actual error so we can debug instead of
+                // sitting on "Calculating…" forever. Yellow .marginal so
+                // it's visually distinct from a real risky verdict.
+                ShouldYouRacePanel(
+                    verdict: .marginal,
+                    title: "Verdict unavailable",
+                    reason: err,
+                    detail: detail
+                )
             } else {
-                // Server fetch hasn't completed yet (or failed). Show a
-                // neutral placeholder with the rich peak/worst context
-                // already available from /api/v1/dashboard.
+                // Fetch in flight.
                 ShouldYouRacePanel(
                     verdict: .unknown,
                     title: "Calculating…",
@@ -250,6 +262,7 @@ struct DashboardView: View {
             await MainActor.run {
                 raceNowEvaluation = nil
                 raceNowAlternatives = []
+                raceNowError = nil
             }
             return
         }
@@ -260,16 +273,25 @@ struct DashboardView: View {
             // Round-trip through JSON to cross the typed↔opaque boundary.
             let encoded = try JSONEncoder().encode(when)
             let opaque = try JSONDecoder().decode(JSONValue.self, from: encoded)
+            Log.info("[CalcClient] race-now fetch starting (profile bytes=\(encoded.count))")
             let response = try await CalcClient.shared.raceNow(profile: opaque)
             await MainActor.run {
                 raceNowEvaluation = response.evaluation
                 raceNowAlternatives = response.alternatives
+                // Server returned 200 but evaluation may still be null
+                // (insufficient data, etc). Surface that distinctly so
+                // the UI doesn't sit on "Calculating…".
+                raceNowError = response.evaluation == nil
+                    ? "Server returned no evaluation (insufficient data)"
+                    : nil
             }
+            Log.info("[CalcClient] race-now fetch ok — verdict=\(response.evaluation?.verdict ?? "nil")")
         } catch {
             Log.error("[CalcClient] race-now fetch failed: \(error)")
             await MainActor.run {
                 raceNowEvaluation = nil
                 raceNowAlternatives = []
+                raceNowError = error.localizedDescription
             }
         }
     }
