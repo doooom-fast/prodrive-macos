@@ -98,7 +98,7 @@ actor CalcClient {
         _ path: String,
         body: Req
     ) async throws -> Resp {
-        guard let url = URL(string: baseURL + path) else { throw APIError.invalidURL }
+        guard let url = URL(string: baseURL + path) else { throw CalcError.invalidURL }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -111,28 +111,50 @@ actor CalcClient {
         do {
             request.httpBody = try JSONEncoder.racecorWire.encode(body)
         } catch {
-            throw APIError.decodingError(error)
+            throw CalcError.encodingFailed(error)
         }
 
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            throw APIError.networkError(error)
+            throw CalcError.networkFailed(error)
         }
 
         guard let http = response as? HTTPURLResponse else {
-            throw APIError.networkError(NSError(domain: "calc", code: -1))
+            throw CalcError.networkFailed(NSError(domain: "calc", code: -1))
         }
-        if http.statusCode == 401 { throw APIError.unauthorized }
+        if http.statusCode == 401 { throw CalcError.unauthorized }
         guard (200..<300).contains(http.statusCode) else {
-            throw APIError.serverError(statusCode: http.statusCode, data: data)
+            throw CalcError.serverError(statusCode: http.statusCode, data: data)
         }
 
         do {
             return try JSONDecoder.racecor.decode(Resp.self, from: data)
         } catch {
-            throw APIError.decodingError(error)
+            throw CalcError.decodingFailed(error)
+        }
+    }
+}
+
+/// Self-contained error enum so CalcClient is portable across the four
+/// native repos regardless of each repo's local `APIError` shape.
+public enum CalcError: LocalizedError {
+    case invalidURL
+    case encodingFailed(Error)
+    case networkFailed(Error)
+    case unauthorized
+    case serverError(statusCode: Int, data: Data)
+    case decodingFailed(Error)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidURL:                          return "Invalid calc API URL"
+        case .encodingFailed(let e):               return "Calc request encode failed: \(e.localizedDescription)"
+        case .networkFailed(let e):                return "Calc network error: \(e.localizedDescription)"
+        case .unauthorized:                        return "Calc API unauthorized"
+        case .serverError(let code, _):            return "Calc API \(code)"
+        case .decodingFailed(let e):               return "Calc response decode failed: \(e.localizedDescription)"
         }
     }
 }
