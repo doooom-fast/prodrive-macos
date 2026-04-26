@@ -265,8 +265,14 @@ struct DashboardView: View {
             // Round-trip through JSON to cross the typed↔opaque boundary.
             let encoded = try JSONEncoder().encode(when)
             let opaque = try JSONDecoder().decode(JSONValue.self, from: encoded)
-            Log.info("[CalcClient] race-now fetch starting (profile bytes=\(encoded.count))")
-            let response = try await CalcClient.shared.raceNow(profile: opaque)
+            // Pass the user's IANA timezone so the verdict is computed
+            // for THEIR local hour, not UTC. Server falls back to UTC
+            // when this is missing — that's why the native chip read
+            // "near 11 PM" while web read "near 5 PM" for the same
+            // moment in Mountain Time.
+            let timeZone = TimeZone.current.identifier
+            Log.info("[CalcClient] race-now fetch starting (profile bytes=\(encoded.count), tz=\(timeZone))")
+            let response = try await CalcClient.shared.raceNow(profile: opaque, timeZone: timeZone)
             await MainActor.run {
                 raceNowEvaluation = response.evaluation
                 raceNowAlternatives = response.alternatives
