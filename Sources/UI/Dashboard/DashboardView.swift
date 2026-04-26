@@ -196,7 +196,11 @@ struct DashboardView: View {
             if let evaluation = raceNowEvaluation {
                 ShouldYouRacePanel(
                     verdict: mapServerVerdict(evaluation.verdict),
-                    title: titleForServerVerdict(evaluation.verdict),
+                    // Render server's pre-rendered strings verbatim —
+                    // both `headline` (chip title) and `detail` (subtitle)
+                    // come straight from /api/v1/calc/race-now so native
+                    // and web display identical copy for the same user.
+                    title: evaluation.headline,
                     reason: evaluation.detail,
                     detail: detail
                 )
@@ -236,18 +240,6 @@ struct DashboardView: View {
         case "marginal": return .marginal
         case "risky":    return .bad
         default:         return .unknown   // "insufficient" or unrecognised
-        }
-    }
-
-    /// Title strings keyed off the server verdict — kept here rather
-    /// than driven by the server so we have control over native copy
-    /// while the underlying decision remains canonical.
-    private func titleForServerVerdict(_ verdict: String) -> String {
-        switch verdict {
-        case "good":     return "Go for it"
-        case "marginal": return "Marginal"
-        case "risky":    return "Risky window"
-        default:         return "Not enough data"
         }
     }
 
