@@ -109,6 +109,9 @@ final class AuthManager: ObservableObject {
     func signOut() {
         tokenStore.delete()
         apiClient.clearToken()
+        // Same JWT, two surfaces (per-screen REST + calc POST). Clear from both.
+        // CalcClient is an actor; bridge from this @MainActor sync method via Task.
+        Task { await CalcClient.shared.setBearerToken(nil) }
         state = .loggedOut
     }
 
@@ -116,6 +119,9 @@ final class AuthManager: ObservableObject {
         do {
             guard let tokens = tokenStore.load() else { return }
             apiClient.setToken(tokens.accessToken)
+            // CalcClient sends Bearer prophylactically; web-api ignores it
+            // today but Phase 9b will gate calc on it.
+            await CalcClient.shared.setBearerToken(tokens.accessToken)
             let user = try await apiClient.me()
             self.state = .authenticated(user: user)
         } catch {
@@ -164,6 +170,7 @@ final class AuthManager: ObservableObject {
             let (accessToken, refreshToken, expiresAt) = try await exchangeCode(code: code, verifier: verifier)
             tokenStore.save(accessToken: accessToken, refreshToken: refreshToken, expiresAt: expiresAt)
             apiClient.setToken(accessToken)
+            await CalcClient.shared.setBearerToken(accessToken)
             let user = try await apiClient.me()
             self.state = .authenticated(user: user)
         } catch {
