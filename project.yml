@@ -20,13 +20,22 @@ targets:
         includes:
           - "**/*.swift"
     resources:
-      # Force xcodegen to treat the .xcassets as a single folder
-      # reference rather than recursing in and adding each imageset
-      # separately. Without `type: folder`, a prior generation wrote
-      # each .imageset as its own broken PBX entry (the ? marks in
-      # the navigator), so actool never saw the catalog as one unit.
+      # Asset catalog — let XcodeGen detect the .xcassets extension on
+      # its own and add it as a `folder.assetcatalog` PBX entry, so
+      # actool compiles it into Assets.car (which contains the linked
+      # AppIcon.icns) at build time.
+      #
+      # The earlier `type: folder` override made Xcode add this as a
+      # plain folder reference (copied verbatim into Resources), so
+      # actool never ran on it and the bundle shipped with no
+      # AppIcon.icns. Info.plist still had CFBundleIconName=AppIcon
+      # but Launch Services couldn't resolve the name — which is why
+      # the Dock fell back to the generic icon even though every PNG
+      # in the iconset was correct.
+      #
+      # If a regen ever produces broken `?` PBX entries again, fix the
+      # XcodeGen version rather than re-introducing `type: folder`.
       - path: Resources/Assets.xcassets
-        type: folder
     settings:
       BUNDLE_ID: racing.k10motorsports.prodrive.racecor.mac
       PRODUCT_BUNDLE_IDENTIFIER: racing.k10motorsports.prodrive.racecor.mac
