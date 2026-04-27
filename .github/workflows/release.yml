@@ -41,6 +41,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select Xcode 26
+        run: |
+          # BrandKit.swift uses Color.glassEffect(in:) which is gated to
+          # the iOS 26 / macOS 26 SDK. macos-latest still defaults to
+          # Xcode 16.x as of this writing, so pick the highest installed
+          # Xcode 26.x to make the symbol resolve.
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "::error::No Xcode 26.x found on runner"
+            ls /Applications/ | grep -i Xcode
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+
       - name: Resolve version from tag
         id: version
         run: |
