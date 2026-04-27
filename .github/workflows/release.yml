@@ -1,0 +1,165 @@
+name: Build & Release
+
+# Builds the macOS app on a v* tag, signs with Developer ID, notarizes via
+# notarytool, and attaches a notarized .dmg to the GitHub release.
+#
+# Distribution model: direct download. Mirrors the prodrive-windows .exe
+# pattern — no App Store review gate.
+#
+# Required org-level secrets (set on the k10-motorsports org, scoped to
+# this repo):
+#   APPLE_TEAM_ID                     — 10-char Team ID (e.g. SQ283GVB96)
+#   APP_STORE_CONNECT_API_KEY_ID      — 10-char API key ID
+#   APP_STORE_CONNECT_API_ISSUER_ID   — issuer UUID
+#   APP_STORE_CONNECT_API_KEY_P8      — base64-encoded .p8 file contents
+#
+# The App Store Connect API key is used for notarization (notarytool
+# accepts the same key format App Store Connect uses).
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build, Sign, Notarize, Release
+    runs-on: macos-latest
+
+    env:
+      SCHEME: RaceCorProDrive-Release
+      PROJECT: RaceCorProDrive.xcodeproj
+      CONFIG: Release
+      ARCHIVE_PATH: build/RaceCorProDrive.xcarchive
+      EXPORT_PATH: build/export
+      APP_NAME: RaceCorProDrive
+      DMG_NAME: RaceCorProDrive.dmg
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          # v1.2.3 -> 1.2.3
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing version: $VERSION"
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Set MARKETING_VERSION + bump CURRENT_PROJECT_VERSION
+        run: |
+          # Update project.yml in place so xcodegen emits the right version.
+          # CURRENT_PROJECT_VERSION (build number) uses the GitHub run number
+          # to guarantee monotonic increase across re-runs of the same tag.
+          /usr/bin/sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"${{ steps.version.outputs.version }}\"/" project.yml
+          /usr/bin/sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"${{ github.run_number }}\"/" project.yml
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Write App Store Connect API key
+        env:
+          API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$API_KEY_P8" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
+
+      - name: Archive (Developer ID distribution)
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration "$CONFIG" \
+            -archivePath "$ARCHIVE_PATH" \
+            -destination "generic/platform=macOS" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8 \
+            -authenticationKeyID "$API_KEY_ID" \
+            -authenticationKeyIssuerID "$API_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic
+
+      - name: Write ExportOptions.plist
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export signed .app
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8 \
+            -authenticationKeyID "$API_KEY_ID" \
+            -authenticationKeyIssuerID "$API_ISSUER_ID"
+
+      - name: Build DMG
+        run: |
+          # hdiutil-built UDZO disk image of the .app — the simplest
+          # distribution format for direct download. No background image
+          # or fancy layout; just drag-to-Applications via Finder convention.
+          mkdir -p build/dmg-staging
+          cp -R "$EXPORT_PATH/$APP_NAME.app" build/dmg-staging/
+          ln -s /Applications build/dmg-staging/Applications
+          hdiutil create \
+            -volname "$APP_NAME" \
+            -srcfolder build/dmg-staging \
+            -ov \
+            -format UDZO \
+            "build/$DMG_NAME"
+
+      - name: Notarize DMG
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          xcrun notarytool submit "build/$DMG_NAME" \
+            --key ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8 \
+            --key-id "$API_KEY_ID" \
+            --issuer "$API_ISSUER_ID" \
+            --wait
+
+      - name: Staple notarization
+        run: xcrun stapler staple "build/$DMG_NAME"
+
+      - name: Verify stapled DMG
+        run: |
+          xcrun stapler validate "build/$DMG_NAME"
+          spctl -a -t open --context context:primary-signature -v "build/$DMG_NAME" || true
+
+      - name: Attach DMG to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/${{ env.DMG_NAME }}
+          fail_on_unmatched_files: true
