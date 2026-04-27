@@ -1,0 +1,61 @@
+{
+  "fill" : {
+    "automatic-gradient" : "display-p3:0.00000,0.00000,0.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "Image 4.png",
+          "name" : "Image 4",
+          "position" : {
+            "scale" : 0.78,
+            "translation-in-points" : [
+              -11.4453125,
+              0
+            ]
+          }
+        },
+        {
+          "blend-mode" : "plus-darker",
+          "image-name" : "Image 3.png",
+          "name" : "Image 3"
+        },
+        {
+          "glass-specializations" : [
+            {
+              "value" : true
+            },
+            {
+              "idiom" : "square",
+              "value" : true
+            }
+          ],
+          "image-name" : "Image.png",
+          "name" : "Image",
+          "position" : {
+            "scale" : 0.3,
+            "translation-in-points" : [
+              0,
+              -29.8125
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
