@@ -67,7 +67,17 @@ final class APIClient {
     }
 
     private func request<T: Decodable>(endpoint: String) async throws -> T {
-        let url = baseURL.appendingPathComponent(endpoint)
+        // String-concat instead of `appendingPathComponent`: the
+        // latter percent-encodes the `?` query separator into `%3F`,
+        // so endpoints like `/api/v1/dashboard?tz=America/Denver`
+        // become `/api/v1/dashboard%3Ftz=America/Denver` — a literal
+        // path with `?` baked in, not a URL with a query string.
+        // Server then 404s the bogus path and the dashboard renders
+        // empty. iOS's APIClient already uses raw concat; this
+        // brings mac into line.
+        guard let url = URL(string: baseURL.absoluteString + endpoint) else {
+            throw APIError.invalidURL
+        }
         var urlRequest = URLRequest(url: url)
 
         if let token = accessToken {
@@ -141,6 +151,7 @@ final class APIClient {
 }
 
 enum APIError: Error {
+    case invalidURL
     case unauthorized
     case notFound
     case serverError(statusCode: Int)
