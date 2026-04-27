@@ -274,14 +274,19 @@ struct Sparkline: View {
 // ─── Dark Panel Style ────────────────────────────────────────────────────
 
 /// ViewModifier that gives a container the "elevated frosted card" look.
-/// Uses `ultraThinMaterial` so the theme's livery image shows through
-/// behind the panel — the glass-on-photo aesthetic the user wants on
-/// macOS. A thin tint overlay keeps text legible regardless of the
-/// image behind, plus a hairline border for edge definition.
 ///
-/// `tint` is now an overlay opacity on top of the material, not a solid
-/// fill — pass `Color.clear` for pure glass, or a darker tone for more
-/// legibility over bright images.
+/// On macOS 26 Tahoe (and iOS 26) it uses Apple's real Liquid Glass
+/// material via `.glassEffect(in:)` — the new dynamic refractive
+/// surface introduced at WWDC 2025. On older OSes (we still ship to
+/// macOS 14+) it falls back to `.ultraThinMaterial`, which is a
+/// frosted blur that LOOKS like glass but doesn't refract — the
+/// pre-Tahoe approximation that's been in this codebase since the
+/// first SwiftUI port.
+///
+/// Both paths preserve the same tint overlay for legibility against
+/// bright livery photos and the same hairline border for edge
+/// definition, so the panel reads as the same surface on both OS
+/// generations — Tahoe just gets the upgraded treatment for free.
 struct PanelStyle: ViewModifier {
     var tint: Color = Palette.bgPanel.opacity(0.35)
     var borderColor: Color = Palette.borderSubtle
@@ -292,13 +297,10 @@ struct PanelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(padding)
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(material)
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(tint)
-                }
+            .liquidGlassBackground(
+                cornerRadius: cornerRadius,
+                fallbackMaterial: material,
+                tint: tint
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -324,6 +326,48 @@ extension View {
                             borderColor: Palette.borderAccent,
                             cornerRadius: cornerRadius, padding: padding,
                             material: .ultraThinMaterial))
+    }
+
+    /// Real Liquid Glass on macOS 26+ / iOS 26+, frosted-blur fallback
+    /// on older OSes. Centralizes the availability gate so call sites
+    /// don't each grow their own `if #available` block.
+    ///
+    /// Why a `tint` parameter on the Tahoe branch: the Liquid Glass
+    /// material is highly transparent — over bright livery photos
+    /// there isn't enough contrast for body text. Layering a low-
+    /// opacity color over the glass restores legibility while still
+    /// letting the refraction read. The tint sits ABOVE the glass
+    /// (last `.background()` is the bottom layer in SwiftUI), so the
+    /// stack from back to front is: livery photo → glass → tint →
+    /// content.
+    @ViewBuilder
+    func liquidGlassBackground(
+        cornerRadius: CGFloat,
+        fallbackMaterial: Material = .ultraThinMaterial,
+        tint: Color = .clear
+    ) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if #available(macOS 26.0, iOS 26.0, *) {
+            // The `in:` parameter masks the glass to the rounded
+            // rectangle. Without it, `.glassEffect()` defaults to
+            // Capsule, which renders a pill-shaped glass card inside
+            // the panel — visible as a "second card" inset behind
+            // the real content. Always pass `in:` to match the
+            // surrounding stroke border's shape.
+            self.background(
+                ZStack {
+                    Color.clear.glassEffect(in: shape)
+                    shape.fill(tint)
+                }
+            )
+        } else {
+            self.background(
+                ZStack {
+                    shape.fill(fallbackMaterial)
+                    shape.fill(tint)
+                }
+            )
+        }
     }
 }
 

@@ -445,15 +445,14 @@ struct SidebarTabs: View {
                 .padding(.bottom, 20)
             }
         }
-        // Glass panel — same ultraThinMaterial backdrop + white-
-        // opacity edge the left rail uses, so the two chrome surfaces
-        // read as a matched pair bracketing the dashboard. Tracks +
-        // Cars tabs live INSIDE this glass so the whole column (header
-        // row + scroll content) sits on one continuous frosted field.
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
+        // Glass panel — real Liquid Glass on Tahoe+, frosted blur
+        // (.ultraThinMaterial) fallback on Sequoia and earlier. The
+        // white-opacity edge matches the left rail so the two chrome
+        // surfaces read as a matched pair bracketing the dashboard.
+        // Tracks + Cars tabs live INSIDE this glass so the whole
+        // column (header row + scroll content) sits on one continuous
+        // glass field.
+        .liquidGlassBackground(cornerRadius: 18)
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)

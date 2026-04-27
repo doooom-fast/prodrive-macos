@@ -30,10 +30,7 @@ struct LoginView: View {
                     }
                 }
                 .padding(32)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                )
+                .liquidGlassBackground(cornerRadius: 16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Palette.borderSubtle, lineWidth: 1)
