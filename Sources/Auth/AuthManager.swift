@@ -116,18 +116,83 @@ final class AuthManager: ObservableObject {
     }
 
     func restore() async {
+        guard let tokens = tokenStore.load() else { return }
+
+        // Refresh-on-launch. Access tokens are short-lived (~1h); without
+        // this the user has to re-OAuth every time the previous access
+        // token has expired, which is effectively "log in every launch"
+        // for any session opened the next day. The refresh token is
+        // long-lived and can mint a new pair as long as the server
+        // hasn't revoked it (i.e. user hasn't signed out elsewhere).
+        // Margin: refresh anything that expires within 60s so we don't
+        // race a request against a token that's about to flip stale.
+        let working: Token
+        if tokens.expiresAt.timeIntervalSinceNow < 60 {
+            do {
+                let refreshed = try await refreshTokens(refreshToken: tokens.refreshToken)
+                tokenStore.save(
+                    accessToken: refreshed.accessToken,
+                    refreshToken: refreshed.refreshToken,
+                    expiresAt: refreshed.expiresAt
+                )
+                working = Token(
+                    accessToken: refreshed.accessToken,
+                    refreshToken: refreshed.refreshToken,
+                    expiresAt: refreshed.expiresAt
+                )
+            } catch {
+                // Refresh failed — server-side revoke, network down, or
+                // the refresh token itself expired. Either way, the only
+                // recovery is a fresh OAuth flow.
+                Log.error("Token refresh failed: \(error)")
+                signOut()
+                return
+            }
+        } else {
+            working = tokens
+        }
+
         do {
-            guard let tokens = tokenStore.load() else { return }
-            apiClient.setToken(tokens.accessToken)
+            apiClient.setToken(working.accessToken)
             // CalcClient sends Bearer prophylactically; web-api ignores it
             // today but Phase 9b will gate calc on it.
-            await CalcClient.shared.setBearerToken(tokens.accessToken)
+            await CalcClient.shared.setBearerToken(working.accessToken)
             let user = try await apiClient.me()
             self.state = .authenticated(user: user)
         } catch {
             Log.error("Restore failed: \(error)")
             signOut()
         }
+    }
+
+    /// POST /api/plugin-auth/token with grant_type=refresh_token. Same
+    /// endpoint exchangeCode() hits, just a different grant type. The
+    /// server returns a fresh (access, refresh, expires_at) triple —
+    /// refresh tokens rotate, so the new refresh_token must replace the
+    /// stored one or the next launch's refresh will fail.
+    private func refreshTokens(refreshToken: String) async throws -> (accessToken: String, refreshToken: String, expiresAt: Date) {
+        let request = RefreshTokenRequest(
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(
+            method: "POST",
+            url: URL(string: "https://prodrive.racecor.io/api/plugin-auth/token")!,
+            body: request,
+        ))
+
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        let tokenResponse = try JSONDecoder.racecor.decode(TokenResponse.self, from: data)
+
+        return (
+            accessToken: tokenResponse.access_token,
+            refreshToken: tokenResponse.refresh_token,
+            expiresAt: tokenResponse.expires_at,
+        )
     }
 
     func handleOAuthCallback(url: URL) async {
@@ -228,6 +293,11 @@ private struct TokenExchangeRequest: Codable {
     let grant_type: String
     let code: String
     let code_verifier: String
+}
+
+private struct RefreshTokenRequest: Codable {
+    let grant_type: String
+    let refresh_token: String
 }
 
 private struct TokenResponse: Codable {
