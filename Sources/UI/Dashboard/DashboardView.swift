@@ -206,10 +206,10 @@ struct DashboardView: View {
                 )
             } else if let err = raceNowError {
                 // Surface the actual error so we can debug instead of
-                // sitting on "Calculating…" forever. Yellow .marginal so
-                // it's visually distinct from a real risky verdict.
+                // sitting on "Calculating…" forever. Amber .messySide
+                // so it's visually distinct from a real risky verdict.
                 ShouldYouRacePanel(
-                    verdict: .marginal,
+                    verdict: .messySide,
                     title: "Verdict unavailable",
                     reason: err,
                     detail: detail
@@ -232,14 +232,19 @@ struct DashboardView: View {
         }
     }
 
-    /// Server verdict vocabulary: `'good' | 'marginal' | 'risky' | 'insufficient'`.
-    /// Native ShouldYouRacePanel.Verdict: `.good | .marginal | .bad | .unknown`.
+    /// Server's six-tier vocabulary (per `SlotTier` in
+    /// `apps/web-api/src/calc/race-now-verdict.ts`) → native verdict
+    /// enum, 1:1 mapping. The chip's icon + tint differ per tier so
+    /// the rank is visible at a glance.
     private func mapServerVerdict(_ verdict: String) -> ShouldYouRacePanel.Verdict {
         switch verdict {
-        case "good":     return .good
-        case "marginal": return .marginal
-        case "risky":    return .bad
-        default:         return .unknown   // "insufficient" or unrecognised
+        case "best":         return .best
+        case "good":         return .good
+        case "clean-side":   return .cleanSide
+        case "messy-side":   return .messySide
+        case "risky":        return .bad
+        case "insufficient": return .unknown
+        default:             return .unknown   // unrecognised tier
         }
     }
 
