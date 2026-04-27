@@ -83,10 +83,11 @@ struct ContentView: View {
     // MARK: - Rail
 
     /// Short, floating glass rail. Hugs its content vertically, sits
-    /// centered in the window, and uses `.ultraThinMaterial` so the
-    /// themed background photo shows through. Theme + profile sit
-    /// directly below the destinations — no spacer, no full-height
-    /// column, just a compact pill of icons.
+    /// centered in the window, and uses `liquidGlassBackground` —
+    /// real Liquid Glass on macOS 26 Tahoe, `.ultraThinMaterial`
+    /// fallback on older OSes — so the themed background photo shows
+    /// through. Theme + profile sit directly below the destinations —
+    /// no spacer, no full-height column, just a compact pill of icons.
     @ViewBuilder
     private var rail: some View {
         VStack(spacing: 6) {
@@ -104,10 +105,7 @@ struct ContentView: View {
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
+        .liquidGlassBackground(cornerRadius: 18)
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)

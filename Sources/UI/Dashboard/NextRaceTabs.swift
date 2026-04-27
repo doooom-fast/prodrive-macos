@@ -101,10 +101,7 @@ struct NextRaceCard: View {
             heroHeader
             bodySection
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
+        .liquidGlassBackground(cornerRadius: 12)
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Palette.borderSubtle, lineWidth: 1)
