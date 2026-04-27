@@ -233,8 +233,28 @@ struct Dashboard: Codable {
         let seriesId: Int
         let raceLapLimit: Int?
         let raceTimeLimit: Int?
+        /// Server-baked presentation strings + colors. Optional here
+        /// so old server responses (pre-prodrive-server PR #31) decode
+        /// without error; renderer falls back to local formatters
+        /// when nil. Once server is deployed, every response
+        /// populates this and clients render verbatim with no drift.
+        let viewModel: NextRaceIdeaViewModel?
 
         var id: String { "\(seriesId)-\(seasonId)-\(startsAtUtc)" }
+    }
+
+    /// Mirrors `RaceSuggestion.viewModel` on the server side
+    /// (`apps/web-api/src/calc/next-race-ideas.ts`). Native renders
+    /// these strings verbatim — no client-side score-color
+    /// thresholding, no client-side countdown formatting, no
+    /// per-platform "Pit lane" vs "Pitlane" drift.
+    struct NextRaceIdeaViewModel: Codable {
+        let scoreColorHex: String
+        let scoreTierLabel: String
+        let startsInLabel: String
+        let durationLabel: String?
+        let strategyLabel: String
+        let strategyColorHex: String
     }
 
     /// Server-pre-computed view-model for the Strengths / Watch Out

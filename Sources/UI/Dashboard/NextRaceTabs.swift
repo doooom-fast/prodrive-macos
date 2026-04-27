@@ -55,8 +55,15 @@ struct NextRaceCard: View {
     let trackLookup: Dashboard.TrackLookup?
     let carLookups: [Dashboard.CarLookup]
 
-    /// Score-tiered accent color. Matches the web's `getScoreColor`.
+    /// Score-tiered accent color. Prefers the server-baked
+    /// `viewModel.scoreColorHex` so all clients render the same hex
+    /// at the same score. Falls back to the local 4-tier threshold
+    /// only if the server response predates the view-model rollout
+    /// (prodrive-server PR #31).
     private var scoreTint: Color {
+        if let hex = idea.viewModel?.scoreColorHex {
+            return Color(hex: hex)
+        }
         switch idea.score {
         case 80...:  return Palette.success                      // green
         case 60...:  return Color(hex: "#c7d93a")                // lime
@@ -69,28 +76,40 @@ struct NextRaceCard: View {
         ISO8601DateFormatter().date(from: idea.startsAtUtc)
     }
 
-    /// Human-readable countdown — "45 min" / "2 hr 15 min" /
-    /// "Friday 7 PM" / "Apr 28, 7:00 PM". Matches what a person
-    /// would say, not what a computer would say.
+    /// Human-readable countdown. Prefers the server-baked
+    /// `viewModel.startsInLabel` so web and native render the same
+    /// copy verbatim ("in 2 hr 15 min" / "Starting now" / "Friday at
+    /// 7:00 PM"). Falls back to RelativeDateTimeFormatter only when
+    /// the server response predates the view-model rollout.
+    ///
+    /// Note: the server-baked label is computed at server-render
+    /// time. If the user holds the dashboard open for many minutes
+    /// the countdown will go stale. Acceptable for an initial
+    /// render; refresh-on-poll updates it.
     private var startsInHumanReadable: String {
+        if let label = idea.viewModel?.startsInLabel {
+            return label
+        }
         guard let date = startsDate else { return idea.startsAtUtc }
         let interval = date.timeIntervalSinceNow
         if interval < 0 { return "Starting now" }
         let fmt = RelativeDateTimeFormatter()
         fmt.unitsStyle = .full
         fmt.dateTimeStyle = .named
-        // Under 12 hours — use relative ("in 2 hours, 15 minutes")
         if interval < 12 * 3600 {
             return fmt.localizedString(for: date, relativeTo: Date())
         }
-        // Longer out — actual time + day name ("Friday at 7:00 PM")
         let df = DateFormatter()
         df.dateFormat = interval < 7 * 86400 ? "EEEE 'at' h:mm a" : "EEE MMM d 'at' h:mm a"
         return df.string(from: date)
     }
 
-    /// Race-duration chip copy ("20 laps" / "45 min").
+    /// Race-duration chip copy. Prefers the server-baked
+    /// `viewModel.durationLabel` so web and native agree on
+    /// formatting (e.g. "1 hr 30 min" vs "90 min"). Falls back to
+    /// the local "{N} laps / {N} min" formatter when missing.
     private var durationLabel: String? {
+        if let label = idea.viewModel?.durationLabel { return label }
         if let laps = idea.raceLapLimit, laps > 0 { return "\(laps) laps" }
         if let mins = idea.raceTimeLimit, mins > 0 { return "\(mins) min" }
         return nil
