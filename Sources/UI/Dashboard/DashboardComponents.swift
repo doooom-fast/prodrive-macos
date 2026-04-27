@@ -58,7 +58,17 @@ struct DashboardTabs: View {
 /// current hour compares — same expand-on-click affordance the web
 /// shows with its chevron.
 struct ShouldYouRacePanel: View {
-    enum Verdict { case good, marginal, bad, unknown }
+    /// Six-tier vocabulary mirrors the server's `SlotTier` 1:1 — see
+    /// `apps/web-api/src/calc/race-now-verdict.ts`. Each case has a
+    /// distinct icon + tint so the chip telegraphs the quantile-rank
+    /// at a glance even before the user reads the headline.
+    ///   - `best`      — single cleanest hour
+    ///   - `good`      — top quartile (excluding best)
+    ///   - `cleanSide` — P50–P75 (lean positive)
+    ///   - `messySide` — P25–P50 (lean caution)
+    ///   - `bad`       — bottom quartile (server's "risky")
+    ///   - `unknown`   — sample floor not met / unrecognised
+    enum Verdict { case best, good, cleanSide, messySide, bad, unknown }
     let verdict: Verdict
     let title: String
     let reason: String
@@ -85,18 +95,22 @@ struct ShouldYouRacePanel: View {
 
     private var icon: String {
         switch verdict {
-        case .good:     return "checkmark.circle.fill"
-        case .marginal: return "exclamationmark.circle.fill"
-        case .bad:      return "xmark.octagon.fill"
-        case .unknown:  return "questionmark.circle"
+        case .best:      return "star.circle.fill"             // celebratory
+        case .good:      return "checkmark.circle.fill"
+        case .cleanSide: return "checkmark.circle"             // outline = lean positive
+        case .messySide: return "exclamationmark.circle"       // outline = lean caution
+        case .bad:       return "xmark.octagon.fill"
+        case .unknown:   return "questionmark.circle"
         }
     }
     private var tint: Color {
         switch verdict {
-        case .good:     return Palette.success
-        case .marginal: return Color(hex: "#ffcf4a")
-        case .bad:      return Palette.brand
-        case .unknown:  return Palette.textDim
+        case .best:      return Color(hex: "#34c759")          // brighter green than .good
+        case .good:      return Palette.success
+        case .cleanSide: return Palette.success.opacity(0.75)  // muted green
+        case .messySide: return Color(hex: "#ffcf4a")          // amber
+        case .bad:       return Palette.brand
+        case .unknown:   return Palette.textDim
         }
     }
 
