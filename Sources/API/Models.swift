@@ -194,6 +194,26 @@ struct Dashboard: Codable {
         let windowSize: Int
         let insights: [WhenInsight]
         let heatmapData: [HeatmapCell]
+        /// Per-hour rank + tier for relative-to-self verdicts. Required
+        /// — server's `evaluateRaceNow` looks up `rankedSlots[hour].tier`
+        /// to decide the verdict. Without this on the wire, the server
+        /// falls back to `insufficient` and native shows "Not enough data
+        /// yet" while web shows the correct tier name. Server interface:
+        /// `apps/web-api/src/calc/when-engine.ts` → `RankedSlot`.
+        let rankedSlots: [RankedSlot]
+    }
+
+    /// Single hour-of-day slot tier-ranked within the user's own
+    /// distribution. Mirrors server's `RankedSlot`. `tier` values are
+    /// the six-way `SlotTier` strings.
+    struct RankedSlot: Codable {
+        let hour: Int                  // 0–23
+        let rank: Int?                 // 0-based; null if below sample floor
+        let percentile: Double?        // 100 = cleanest, 0 = messiest
+        let tier: String               // "best" | "good" | "clean-side" | "messy-side" | "risky" | "insufficient"
+        let sessionCount: Int
+        let avgIncidents: Double
+        let avgPosition: Double?
     }
 
     struct NextRaceIdeaEntry: Codable, Identifiable {
