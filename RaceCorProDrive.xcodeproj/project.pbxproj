@@ -12,6 +12,7 @@
 		0C2E85FBED94E5474A5B3DE1 /* NextRaceTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9CC7AE1A8336157577EE71 /* NextRaceTabs.swift */; };
 		0C512B26B912C8DD9D2473C2 /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E50424B53305D1A459BB4B9 /* DashboardComponents.swift */; };
 		0D2AAEA4238BC830D5292256 /* LibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAC533C3ACA76A8D5F4536B /* LibraryViewModel.swift */; };
+		12C6B0E4B1417CEF6C53198B /* DashboardFilters.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2D11822CD3D8DF1CA20139 /* DashboardFilters.swift */; };
 		1655B4186EF9F05801B23477 /* CalcModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15BEF14D3D70DE14DAB6A2D /* CalcModels.swift */; };
 		1A47831D5CE6342F5F1DD357 /* ThemeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E9169A0287D33B34B3D6AE0 /* ThemeStore.swift */; };
 		219C7805C9450461BFA32C59 /* MainShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38F075EB3F59D2CEE584B4D /* MainShell.swift */; };
@@ -77,6 +78,7 @@
 		A15BEF14D3D70DE14DAB6A2D /* CalcModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcModels.swift; sourceTree = "<group>"; };
 		A38F075EB3F59D2CEE584B4D /* MainShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainShell.swift; sourceTree = "<group>"; };
 		A94A9051DFA44317626D096F /* Placeholders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Placeholders.swift; sourceTree = "<group>"; };
+		AA2D11822CD3D8DF1CA20139 /* DashboardFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardFilters.swift; sourceTree = "<group>"; };
 		AA30898D4C5F0B0A02150AFD /* LucideIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LucideIcons.swift; sourceTree = "<group>"; };
 		BF546427494DD33FEA141DC1 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		BFAD0F62AC689EE96DC66A94 /* TopNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopNavBar.swift; sourceTree = "<group>"; };
@@ -183,6 +185,7 @@
 		C0CBA12DBD410D52AE66D1ED /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				AA2D11822CD3D8DF1CA20139 /* DashboardFilters.swift */,
 				24A237CB01F91C5AC0500137 /* DashboardPoller.swift */,
 				1A7E0AE28A23F630856C27C5 /* Log.swift */,
 				C4C4D2DDC97CD63DAC5A6AF6 /* NotificationCoordinator.swift */,
@@ -324,6 +327,7 @@
 				1655B4186EF9F05801B23477 /* CalcModels.swift in Sources */,
 				9F27D10C69A4CBF698BA627D /* ContentView.swift in Sources */,
 				0C512B26B912C8DD9D2473C2 /* DashboardComponents.swift in Sources */,
+				12C6B0E4B1417CEF6C53198B /* DashboardFilters.swift in Sources */,
 				57E755D20204DADE545E6FB5 /* DashboardPoller.swift in Sources */,
 				233E8C4933F3F4ED4C575566 /* DashboardView.swift in Sources */,
 				90C5952D37753367F2C3284F /* DashboardVisualizations.swift in Sources */,

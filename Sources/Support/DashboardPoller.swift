@@ -91,8 +91,14 @@ final class DashboardPoller: ObservableObject {
         // round trips, guaranteed consistency between the dashboard
         // and the session-driven panels (Calendar + Previous Races).
         do {
-            let newDashboard = try await APIClient.shared.dashboard()
-            Log.info("[POLL] dashboard ok — recentSessions=\(newDashboard.recentSessions?.count ?? 0), scatterBuckets=\(newDashboard.scatterBuckets?.count ?? 0), topTracks=\(newDashboard.topTracks?.count ?? 0), lookupTracks=\(newDashboard.lookups?.tracks.count ?? 0)")
+            // Read the user's current filter prefs (set from the
+            // dashboard toolbar). Poller fires outside the view tree
+            // so we read UserDefaults directly. Filter changes
+            // trigger an immediate re-tick via DashboardView's
+            // onChange handlers calling start().
+            let (ctx, lic) = DashboardFilterPrefs.current()
+            let newDashboard = try await APIClient.shared.dashboard(context: ctx, license: lic)
+            Log.info("[POLL] dashboard ok — context=\(ctx.rawValue) license=\(lic.rawValue) recentSessions=\(newDashboard.recentSessions?.count ?? 0), scatterBuckets=\(newDashboard.scatterBuckets?.count ?? 0), topTracks=\(newDashboard.topTracks?.count ?? 0), lookupTracks=\(newDashboard.lookups?.tracks.count ?? 0)")
             await diffAndNotify(newDashboard: newDashboard)
             latest = newDashboard
         } catch {
