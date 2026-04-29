@@ -74,7 +74,13 @@ final class TokenStore {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
         do {
             let data = try Data(contentsOf: fileURL)
-            return try JSONDecoder.racecor.decode(Token.self, from: data)
+            // Plain JSONDecoder, paired with the plain JSONEncoder in save().
+            // JSONDecoder.racecor's custom date strategy expects an ISO8601
+            // string (server response shape); the local file stores Date as
+            // a number via the default strategy, so using .racecor here
+            // throws a typeMismatch and silently drops the user back to the
+            // login screen on every relaunch.
+            return try JSONDecoder().decode(Token.self, from: data)
         } catch {
             Log.error("TokenStore load failed: \(error)")
             return nil
