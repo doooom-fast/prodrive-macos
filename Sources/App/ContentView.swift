@@ -15,20 +15,26 @@ enum Destination: String, CaseIterable {
     case tracks = "Tracks"
     case cars = "Cars"
     case moments = "Moments"
+    case library = "Library"
 
     /// Matches the web's lucide-react icon choice so the two platforms
     /// feel like one product. Rendered via `LucideIconView` — NOT SF
     /// Symbols — because SF's closest equivalents drift too far from
     /// what the web presents (e.g. the built-in `calendar` glyph looks
     /// nothing like lucide's `calendar-clock`).
-    var lucideIcon: LucideIcon {
+    ///
+    /// Some destinations (e.g. Library) are native-only and don't have a
+    /// web counterpart — those use SF Symbols via `iconSource`. Lucide
+    /// translation pending if/when the web grows the same surface.
+    var iconSource: RailIconSource {
         switch self {
-        case .dashboard: return .dashboard
-        case .dna:       return .dna
-        case .when:      return .when
-        case .tracks:    return .tracks
-        case .cars:      return .cars
-        case .moments:   return .moments
+        case .dashboard: return .lucide(.dashboard)
+        case .dna:       return .lucide(.dna)
+        case .when:      return .lucide(.when)
+        case .tracks:    return .lucide(.tracks)
+        case .cars:      return .lucide(.cars)
+        case .moments:   return .lucide(.moments)
+        case .library:   return .systemImage("film.stack")
         }
     }
 }
@@ -93,7 +99,7 @@ struct ContentView: View {
         VStack(spacing: 6) {
             ForEach(Destination.allCases, id: \.self) { dest in
                 RailIconButton(
-                    icon: .lucide(dest.lucideIcon),
+                    icon: dest.iconSource,
                     tooltip: dest.rawValue,
                     isActive: selectedDestination == dest,
                     action: { selectedDestination = dest }
@@ -251,6 +257,8 @@ struct ContentView: View {
             PlaceholderView(title: "Cars", subtitle: "Car affinity breakdown coming soon")
         case .moments:
             PlaceholderView(title: "Moments", subtitle: "Career highlights & milestones coming soon")
+        case .library:
+            LibraryView()
         }
     }
 }
