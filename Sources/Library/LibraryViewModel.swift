@@ -33,6 +33,22 @@ final class LibraryViewModel: ObservableObject {
             home.appendingPathComponent("Movies", isDirectory: true),
             home.appendingPathComponent("Videos", isDirectory: true),
         ]
+        observeIncomingBundles()
+    }
+
+    /// Observe LAN-receive notifications from `ReceiverServer`. Fires on
+    /// the main queue, so a follow-up refresh picks up the new file
+    /// without the user clicking Refresh.
+    private func observeIncomingBundles() {
+        NotificationCenter.default.addObserver(
+            forName: ReceiverServer.bundleReceivedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { [weak self] in
+                await self?.refresh()
+            }
+        }
     }
 
     /// Force a fresh scan. Files whose path + mtime fingerprint matches the

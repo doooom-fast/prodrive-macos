@@ -15,6 +15,9 @@ struct MainShell: View {
             .task {
                 await ThemeStore.shared.refresh()
                 DashboardPoller.shared.start()
+                // Advertise this Mac as a Bonjour-discoverable receiver
+                // so the Windows app can ship `.rcpdv` bundles over the LAN.
+                SharingCoordinator.shared.start(userId: "discord:\(user.discordId)")
             }
             .onDisappear {
                 // onDisappear fires when the user signs out and the
@@ -22,6 +25,7 @@ struct MainShell: View {
                 // keep hitting the server for a logged-out session
                 // (which would 401 anyway, but still wasteful).
                 DashboardPoller.shared.stop()
+                SharingCoordinator.shared.stop()
             }
     }
 }

@@ -35,14 +35,17 @@
 		726D60DBFF058EF18B3E326A /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10DF9C8DF9A2EC4F1A185DB4 /* SessionDetailView.swift */; };
 		7DEBB0B616C046100DD47D53 /* BrandKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */; };
 		90C5952D37753367F2C3284F /* DashboardVisualizations.swift in Sources */ = {isa = PBXBuildFile; fileRef = A009234313455C3C3A82684C /* DashboardVisualizations.swift */; };
+		9C76306155DF41F449C1E613 /* SharingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2D94531B5392C2DBB182D8 /* SharingCoordinator.swift */; };
 		9F27D10C69A4CBF698BA627D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9867F4D5244C7964E0EBDC06 /* ContentView.swift */; };
 		A0293180D02A3444C87CBCB2 /* NotificationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C4D2DDC97CD63DAC5A6AF6 /* NotificationCoordinator.swift */; };
 		A11B39C348CE2A6B96ACE729 /* PKCEChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CF192B1EC82F4C4182552D /* PKCEChallenge.swift */; };
 		A129E255A4EFED780AABB569 /* BrandAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA72EA57C3FB26E56CD1D92 /* BrandAssets.swift */; };
 		A8F1DDBD8A861C5B57ECF887 /* CalcClient+Debug.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CCCD647EED819B1AAD924B /* CalcClient+Debug.swift */; };
 		AEED8917E959011469BD777F /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E0AE28A23F630856C27C5 /* Log.swift */; };
+		B89D8444DA291FE28255628A /* SharedKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8ACAB2C17FC9FF70B827E4B /* SharedKey.swift */; };
 		C34D7C9F476A9104D5C11FF9 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F98719D267F8AABBC6AFA4B0 /* AuthManager.swift */; };
 		CDB2606B0377E4A73621491C /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD485B55F9741A793D61F48C /* PlayerView.swift */; };
+		D23FE517815F73A6BA0E29CC /* ReceiverServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92E26C0E7CD04CFE44D5F5D /* ReceiverServer.swift */; };
 		D5803D4801C29C3E07323E6E /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A82475D31B351A97DFB64A /* TokenStore.swift */; };
 		DAC3E8A060A772D1F1DB8087 /* TelemetryFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152BDEE57DFCC64F952E9CFD /* TelemetryFrames.swift */; };
 		F6DD2E8C65D57BA7E7B9DFED /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF546427494DD33FEA141DC1 /* LibraryView.swift */; };
@@ -73,6 +76,7 @@
 		8E4A28E7F43147028869A446 /* SessionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionsView.swift; sourceTree = "<group>"; };
 		91C065D7745460FE57B3DE97 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		9867F4D5244C7964E0EBDC06 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9F2D94531B5392C2DBB182D8 /* SharingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingCoordinator.swift; sourceTree = "<group>"; };
 		A009234313455C3C3A82684C /* DashboardVisualizations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardVisualizations.swift; sourceTree = "<group>"; };
 		A15BEF14D3D70DE14DAB6A2D /* CalcModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcModels.swift; sourceTree = "<group>"; };
 		A38F075EB3F59D2CEE584B4D /* MainShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainShell.swift; sourceTree = "<group>"; };
@@ -83,10 +87,12 @@
 		C4C4D2DDC97CD63DAC5A6AF6 /* NotificationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationCoordinator.swift; sourceTree = "<group>"; };
 		C5EC294D5E473E71065E0C96 /* RaceCorProDrive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RaceCorProDrive.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8A82475D31B351A97DFB64A /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
+		C8ACAB2C17FC9FF70B827E4B /* SharedKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedKey.swift; sourceTree = "<group>"; };
 		CBAC533C3ACA76A8D5F4536B /* LibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModel.swift; sourceTree = "<group>"; };
 		D08B641940B8698C5E481A92 /* DataStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStrip.swift; sourceTree = "<group>"; };
 		D7D4DB503DF2B4CBD9AE4F88 /* TokenLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenLoader.swift; sourceTree = "<group>"; };
 		DD485B55F9741A793D61F48C /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		F92E26C0E7CD04CFE44D5F5D /* ReceiverServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverServer.swift; sourceTree = "<group>"; };
 		F98719D267F8AABBC6AFA4B0 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		FDDA7227E5AEA82FB41C49E6 /* BrandKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandKit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -198,6 +204,16 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		DDF807701B7385B586658570 /* Sharing */ = {
+			isa = PBXGroup;
+			children = (
+				F92E26C0E7CD04CFE44D5F5D /* ReceiverServer.swift */,
+				C8ACAB2C17FC9FF70B827E4B /* SharedKey.swift */,
+				9F2D94531B5392C2DBB182D8 /* SharingCoordinator.swift */,
+			);
+			path = Sharing;
+			sourceTree = "<group>";
+		};
 		E38307DA92115617DD0337F0 /* Editor */ = {
 			isa = PBXGroup;
 			children = (
@@ -219,6 +235,7 @@
 				B29606C365524476FFE44EEB /* DesignSystem */,
 				E38307DA92115617DD0337F0 /* Editor */,
 				5BF5291C4D9940FB064D120D /* Library */,
+				DDF807701B7385B586658570 /* Sharing */,
 				C0CBA12DBD410D52AE66D1ED /* Support */,
 				673A3109A469633816604808 /* UI */,
 			);
@@ -342,8 +359,11 @@
 				40B4DB1D660FAE266FE57E7A /* Placeholders.swift in Sources */,
 				CDB2606B0377E4A73621491C /* PlayerView.swift in Sources */,
 				03C335861472E96057A3DA0A /* RaceCorProDriveApp.swift in Sources */,
+				D23FE517815F73A6BA0E29CC /* ReceiverServer.swift in Sources */,
 				726D60DBFF058EF18B3E326A /* SessionDetailView.swift in Sources */,
 				0907C48AA4ABD57AB6B97393 /* SessionsView.swift in Sources */,
+				B89D8444DA291FE28255628A /* SharedKey.swift in Sources */,
+				9C76306155DF41F449C1E613 /* SharingCoordinator.swift in Sources */,
 				DAC3E8A060A772D1F1DB8087 /* TelemetryFrames.swift in Sources */,
 				632900E5A7654A03302AA190 /* TelemetryOverlay.swift in Sources */,
 				1A47831D5CE6342F5F1DD357 /* ThemeStore.swift in Sources */,

@@ -23,6 +23,11 @@ final class APIClient {
         accessToken = nil
     }
 
+    /// Read-only accessor used by sibling subsystems (e.g. the Bonjour-based
+    /// bundle receiver) that need to derive a shared key from the bearer
+    /// token without taking a dependency on `AuthManager`.
+    var currentAccessToken: String? { accessToken }
+
     func me() async throws -> Me {
         return try await request(endpoint: "/api/v1/me")
     }
