@@ -49,5 +49,53 @@
             </array>
         </dict>
     </array>
+    <!-- ★ .rcpdv (RaceCor Pro Drive Video) bundle format ★
+         Declares our private UTI, conforming to public.mpeg-4 + public.movie
+         so QuickTime / VLC / AVPlayer / Quick Look can still open a .rcpdv
+         when explicitly pointed at it (the bytes are valid MP4). The custom
+         extension exists for branding, custom file icons, and so the editor
+         is the default open-with handler — without disturbing user-level
+         .mp4 associations. Spec: agents/skills/race-bundle-format/ -->
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>racing.k10motorsports.prodrive.rcpdv</string>
+            <key>UTTypeDescription</key>
+            <string>RaceCor Pro Drive Bundle</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.mpeg-4</string>
+                <string>public.movie</string>
+                <string>public.audiovisual-content</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>rcpdv</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>video/mp4</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>RaceCor Pro Drive Bundle</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>racing.k10motorsports.prodrive.rcpdv</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
