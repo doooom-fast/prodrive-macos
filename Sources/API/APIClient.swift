@@ -36,20 +36,26 @@ final class APIClient {
         return try await request(endpoint: "/api/v1/sessions/\(id)")
     }
 
-    func dashboard() async throws -> Dashboard {
+    func dashboard(
+        context: DashboardContext = .race,
+        license: DashboardLicense = .all,
+    ) async throws -> Dashboard {
         // Pass the device's IANA timezone so the server buckets the
         // returned WhenProfile.byHour / rankedSlots in the user's
         // local hour-of-week. Without this, the server defaults to
         // UTC and rankedSlots[localHour] returns the wrong bucket of
-        // sessions — e.g. local 9 PM Sunday MDT (hour 21) reads back
-        // the user's local 3 PM races (UTC hour 21 = MDT 15:00) and
-        // the Race-Now panel shows wildly different stats than the
-        // web dashboard, which buckets in the user's TZ already via
-        // the cookie / x-vercel-ip-timezone fallback chain.
+        // sessions.
         let tz = TimeZone.current.identifier
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             ?? "UTC"
-        return try await request(endpoint: "/api/v1/dashboard?tz=\(tz)")
+
+        // Context + license carry the user's dashboard view prefs.
+        // Defaults match the server's defaults (`race` + `all`) so a
+        // caller that omits them gets backward-compat behavior.
+        var endpoint = "/api/v1/dashboard?tz=\(tz)"
+        endpoint += "&context=\(context.rawValue)"
+        endpoint += "&license=\(license.rawValue)"
+        return try await request(endpoint: endpoint)
     }
 
     func tokensNative(format: String = "swift") async throws -> String {

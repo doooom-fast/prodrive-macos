@@ -35,6 +35,18 @@ struct DashboardView: View {
     @ObservedObject private var poller: DashboardPoller
     @State private var selectedTab: DashboardTab = .performance
 
+    /// Dashboard filter prefs — persisted across launches. Storage
+    /// keys shared with the poller via `DashboardFilterPrefs`.
+    @AppStorage(DashboardFilterPrefs.contextKey) private var contextRaw: String = DashboardContext.race.rawValue
+    @AppStorage(DashboardFilterPrefs.licenseKey) private var licenseRaw: String = DashboardLicense.all.rawValue
+
+    private var currentContext: DashboardContext {
+        DashboardContext(rawValue: contextRaw) ?? .race
+    }
+    private var currentLicense: DashboardLicense {
+        DashboardLicense(rawValue: licenseRaw) ?? .all
+    }
+
     /// Server-canonical Race-Now verdict. Re-fetched via CalcClient
     /// whenever the underlying `when` profile changes (i.e. on every
     /// dashboard poll that updates the When-engine state). The view
@@ -90,7 +102,8 @@ struct DashboardView: View {
                 // native app's Mac-idiom layout.
                 DataStrip(
                     dashboard: dashboard,
-                    safetyRating: dashboard?.safetyRating
+                    safetyRating: dashboard?.safetyRating,
+                    context: currentContext,
                 )
             }
 
@@ -105,6 +118,11 @@ struct DashboardView: View {
         .task(id: dashboard?.when?.peakHourStart) {
             await refreshRaceNow()
         }
+        // Refetch immediately on filter change — don't wait for the
+        // 60s poll tick. `start()` cancels the in-flight sleep and
+        // re-ticks, picking up the new prefs from UserDefaults.
+        .onChange(of: contextRaw) { _, _ in poller.start() }
+        .onChange(of: licenseRaw) { _, _ in poller.start() }
     }
 
     // MARK: - Main column
@@ -115,8 +133,12 @@ struct DashboardView: View {
             HStack(spacing: 14) {
                 DashboardTabs(selection: $selectedTab)
                 Spacer()
-                toolbarLink(label: "Import", icon: "arrow.up")
-                toolbarLink(label: "Download", icon: "arrow.down")
+                // Race / Practice context toggle. Replaces what used
+                // to be Import + Download placeholders here — those
+                // weren't wired to anything yet, and the filter UI
+                // is what users actually need on the dashboard.
+                contextMenu
+                licenseMenu
             }
             .padding(.horizontal, 20)
             .frame(height: 44)
@@ -369,6 +391,68 @@ struct DashboardView: View {
         .foregroundColor(Palette.textDim)
     }
 
+    /// Race vs Practice context menu — clicking the trigger drops
+    /// down a Menu of the two options. AppKit-native styling via
+    /// MenuStyle so it sits flush with the tabs row.
+    private var contextMenu: some View {
+        Menu {
+            ForEach(DashboardContext.allCases, id: \.self) { ctx in
+                Button {
+                    contextRaw = ctx.rawValue
+                } label: {
+                    if ctx == currentContext {
+                        Label(ctx.displayName, systemImage: "checkmark")
+                    } else {
+                        Text(ctx.displayName)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: currentContext == .race ? "trophy" : "figure.strengthtraining.traditional")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(currentContext.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+            }
+            .foregroundColor(Palette.textPrimary)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    /// License (iRacing category) menu. "All Licenses" plus the
+    /// five disciplines. Same trigger style as contextMenu.
+    private var licenseMenu: some View {
+        Menu {
+            ForEach(DashboardLicense.allCases, id: \.self) { lic in
+                Button {
+                    licenseRaw = lic.rawValue
+                } label: {
+                    if lic == currentLicense {
+                        Label(lic.displayName, systemImage: "checkmark")
+                    } else {
+                        Text(lic.displayName)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "list.bullet")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(currentLicense.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+            }
+            .foregroundColor(Palette.textPrimary)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
 }
 
 #Preview {

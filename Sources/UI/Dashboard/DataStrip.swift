@@ -14,10 +14,23 @@ import SwiftUI
 struct DataStrip: View {
     let dashboard: Dashboard?
     let safetyRating: [String: Dashboard.SafetyRatingData]?
+    /// Active dashboard context — drives the count column's label
+    /// flip ("RACES" → "PRACTICES" when context==.practice).
+    /// Defaults to .race so embedded surfaces without a context
+    /// don't need to thread the prop.
+    var context: DashboardContext = .race
+
+    /// Race-or-practice label for the leftmost count column. Code
+    /// stays `totalRaces` (wire/DB field name); only the on-screen
+    /// label moves with context — same convention codified in
+    /// `prodrive-agents/skills/server-design-system`.
+    private var countLabel: String {
+        context == .practice ? "PRACTICES" : "RACES"
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
-            stat("RACES", value: "\(dashboard?.stats.totalRaces ?? 0)")
+            stat(countLabel, value: "\(dashboard?.stats.totalRaces ?? 0)")
             divider
             stat("LAPS", value: "\(dashboard?.stats.totalLaps ?? 0)")
 
