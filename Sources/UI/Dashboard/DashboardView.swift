@@ -55,6 +55,7 @@ struct DashboardView: View {
 
     private var dashboard: Dashboard? { poller.latest }
     private var recentSessions: [Dashboard.RecentSession] { poller.sessions }
+    private var previousRaces: [Dashboard.PreviousRaceCard] { poller.previousRaces }
     private var isLoadingInitialData: Bool { poller.latest == nil && poller.isPolling }
 
     var body: some View {
@@ -134,7 +135,10 @@ struct DashboardView: View {
                             lookups: dashboard?.lookups
                         )
                     case .previous:
-                        PreviousRacesTabContent(sessions: recentSessions)
+                        PreviousRacesTabContent(
+                            cards: previousRaces,
+                            lookups: dashboard?.lookups
+                        )
                     }
                 }
                 .padding(.horizontal, 20)

@@ -34,6 +34,16 @@ final class DashboardPoller: ObservableObject {
         latest?.recentSessions ?? []
     }
 
+    /// Server-baked Previous Races cards — pre-paired (race ↔ practice
+    /// ↔ qualifying) and pre-formatted by
+    /// `apps/web-api/src/calc/previous-races.ts`. The Previous Races
+    /// tab renders these verbatim; no client-side pairing or
+    /// view-model derivation. Empty array when missing or when the
+    /// user hasn't raced yet.
+    var previousRaces: [Dashboard.PreviousRaceCard] {
+        latest?.previousRaces ?? []
+    }
+
     /// Seconds between polls. Tunable here so future load tests can
     /// adjust without hunting through view code.
     static let pollInterval: TimeInterval = 60
