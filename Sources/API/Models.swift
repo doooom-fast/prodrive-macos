@@ -372,7 +372,8 @@ struct Dashboard: Codable {
 
     /// Sessions bundled into the dashboard payload so native apps
     /// don't need a second `/api/v1/sessions` fetch. Up to 200 most
-    /// recent. Drives the Race Calendar + Previous Races tab.
+    /// recent. Drives the Race Calendar heatmap; Previous Races tab
+    /// now consumes `previousRaces` (server-baked card list) instead.
     struct RecentSession: Codable, Identifiable {
         let id: String
         let subsessionId: Int
@@ -387,6 +388,74 @@ struct Dashboard: Codable {
         let incidentCount: Int?
     }
     let recentSessions: [RecentSession]?
+
+    // MARK: - Previous Races (server-baked card list)
+
+    /// Single session payload bundled into a Previous Races card —
+    /// matches the wire shape produced by
+    /// `apps/web-api/src/calc/previous-races.ts`. Field set is the
+    /// minimum the renderer needs (track + car + position +
+    /// best lap + field size + completed laps); everything else is
+    /// pre-formatted into `viewModel`.
+    struct PreviousRaceSession: Codable, Identifiable {
+        let id: String
+        let carModel: String
+        let manufacturer: String?
+        let trackName: String?
+        let trackConfig: String?
+        let finishPosition: Int?
+        let incidentCount: Int?
+        /// Best lap in seconds (decimal). `nil` when unknown.
+        let bestLapTime: Double?
+        let fieldSize: Int?
+        let completedLaps: Int?
+        let gameName: String?
+        let sessionType: String?
+        let category: String
+        /// ISO 8601 UTC timestamp — the calc emits a strings, not
+        /// `Date`, so we keep the raw form here. `viewModel.dateLabel`
+        /// already has the formatted display copy.
+        let createdAt: String
+    }
+
+    /// Server-baked presentation strings for a Previous Races card.
+    /// Native renders these verbatim — the calc resolves position
+    /// label + color, "of N" copy, formatted best lap, humanised
+    /// session label, etc. so web and native can't drift.
+    /// Source: `apps/web-api/src/calc/previous-races.ts`.
+    struct PreviousRaceViewModel: Codable {
+        /// "races" | "practices" | "time_trials" — drives the
+        /// session-type tab grouping in the Previous Races tab.
+        let sessionTypeTab: String
+        /// "P1".."P40" / "DNF" / "TT" / "—" / nil-when-practice.
+        let positionDisplay: String?
+        let positionColorHex: String?
+        let fieldSizeLabel: String?
+        let bestLapLabel: String
+        let practiceBestLapLabel: String?
+        let qualifyingBestLapLabel: String?
+        let qualifyingPositionLabel: String?
+        let dateLabel: String
+        let sessionLabel: String
+        let incidentsLabel: String?
+        let practiceIncidentsLabel: String?
+        let gameLabel: String
+        let trackLabel: String
+    }
+
+    /// One Previous Races card. The calc has already paired the
+    /// "headline" race with its sibling practice / qualifying inside
+    /// an 8-hour window on the same track — we just render them.
+    struct PreviousRaceCard: Codable, Identifiable {
+        let session: PreviousRaceSession
+        let practiceSession: PreviousRaceSession?
+        let qualifyingSession: PreviousRaceSession?
+        let viewModel: PreviousRaceViewModel
+
+        var id: String { session.id }
+    }
+
+    let previousRaces: [PreviousRaceCard]?
 
     // Flat convenience accessors so existing UI code compiles unchanged.
     var totalRaces: Int { stats.totalRaces }
