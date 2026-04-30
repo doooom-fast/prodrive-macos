@@ -252,9 +252,27 @@ struct Dashboard: Codable {
         let scoreColorHex: String
         let scoreTierLabel: String
         let startsInLabel: String
+        /// Compact countdown for the time chip ("15m" / "2h 30m" /
+        /// "Starting now" / weekday-short / "Apr 28"). The native time
+        /// chip renders this verbatim — no client-side date math.
+        ///
+        /// Optional on the wire so legacy server responses (pre-PR
+        /// shipping `startsInShortLabel`) still decode. Renderer
+        /// falls back to `startsInLabel` when missing.
+        let startsInShortLabel: String?
         let durationLabel: String?
         let strategyLabel: String
         let strategyColorHex: String
+        /// Pre-resolved track display label. Server post-processing in
+        /// `getDashboardData()` builds this via the lookups bundle.
+        /// Optional — legacy responses don't carry it; renderer falls
+        /// back to the `Lookups.track(for:)` displayName plus a manual
+        /// trackConfig concat.
+        let trackLabel: String?
+        /// Single canonical key for the lookups bundle. Optional for
+        /// the same backwards-compat reason as `trackLabel`. Renderer
+        /// falls back to a case-folded raw track name when nil.
+        let trackLookupKey: String?
     }
 
     /// Server-pre-computed view-model for the Strengths / Watch Out
@@ -333,6 +351,21 @@ struct Dashboard: Codable {
         let tracks: [TrackLookup]
         let cars: [CarLookup]
 
+        /// Look up a track by the server-baked `viewModel.trackLookupKey`.
+        /// Preferred over `track(for:)` — the key has already been
+        /// synonym-folded server-side via `resolveIRacingTrackId`, so
+        /// this is a single direct-key match with no client-side
+        /// resolution.
+        func trackByKey(_ key: String?) -> TrackLookup? {
+            guard let key, !key.isEmpty else { return nil }
+            return tracks.first(where: { $0.key == key })
+        }
+
+        /// Legacy accessor — does a naïve case-folded match against
+        /// the raw track name. Prefer `trackByKey(viewModel.trackLookupKey)`
+        /// on cards that come from a server-baked view model. Kept
+        /// for the calendar heatmap and other places that don't yet
+        /// have a viewModel.
         func track(for name: String?) -> TrackLookup? {
             guard let name, !name.isEmpty else { return nil }
             let key = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -441,6 +474,12 @@ struct Dashboard: Codable {
         let practiceIncidentsLabel: String?
         let gameLabel: String
         let trackLabel: String
+        /// Single canonical key for the lookups bundle — populated by
+        /// `getDashboardData()` post-processing via `resolveIRacingTrackId`.
+        /// Optional on the wire for backwards-compat with server
+        /// responses that predate the post-processing step. Renderer
+        /// falls back to `trackByKey(session.trackName.lowercased())`.
+        let trackLookupKey: String?
     }
 
     /// One Previous Races card. The calc has already paired the
