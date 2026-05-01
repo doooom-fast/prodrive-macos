@@ -51,24 +51,37 @@ struct NextRaceTabContent: View {
         if ideas.isEmpty {
             emptyState
         } else {
-            // Web uses md:grid-cols-2 — at typical macOS window widths
-            // a fixed 2-column adaptive grid reads the same.
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 14),
-                    GridItem(.flexible(), spacing: 14),
-                ],
-                alignment: .leading,
-                spacing: 14
-            ) {
-                ForEach(columns, id: \.category) { col in
-                    NextRaceCategoryColumn(
-                        categoryKey: col.category,
-                        title: Self.categoryLabel[col.category] ?? col.category,
-                        accentHex: Self.categoryColor[col.category] ?? "#888888",
-                        items: col.items,
-                        lookups: lookups
-                    )
+            VStack(alignment: .leading, spacing: 12) {
+                // Section heading — matches the web's "Next Race
+                // Ideas" h2 with clock icon.
+                HStack(spacing: 8) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Palette.textSecondary)
+                    Text("Next Race Ideas")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Palette.textSecondary)
+                }
+
+                // Web uses md:grid-cols-2 — at typical macOS window
+                // widths a fixed 2-column adaptive grid reads the same.
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible(), spacing: 14),
+                        GridItem(.flexible(), spacing: 14),
+                    ],
+                    alignment: .leading,
+                    spacing: 14
+                ) {
+                    ForEach(columns, id: \.category) { col in
+                        NextRaceCategoryColumn(
+                            categoryKey: col.category,
+                            title: Self.categoryLabel[col.category] ?? col.category,
+                            accentHex: Self.categoryColor[col.category] ?? "#888888",
+                            items: col.items,
+                            lookups: lookups
+                        )
+                    }
                 }
             }
         }
@@ -126,7 +139,14 @@ struct NextRaceCategoryColumn: View {
             ForEach(items) { idea in
                 NextRaceCard(
                     idea: idea,
-                    trackLookup: lookups?.track(for: idea.trackName),
+                    // Server-baked `trackLookupKey` is the canonical
+                    // way to resolve track assets — synonym folding
+                    // already happened in `getDashboardData()` via
+                    // `resolveIRacingTrackId`. Falls back to the
+                    // case-folded raw track name when the field is
+                    // empty (legacy server response).
+                    trackLookup: lookups?.trackByKey(idea.viewModel?.trackLookupKey)
+                        ?? lookups?.track(for: idea.trackName),
                     carLookups: idea.carClassNames.compactMap { lookups?.car(for: $0) }
                 )
             }
@@ -204,38 +224,27 @@ struct NextRaceCard: View {
         }
     }
 
-    private var startsDate: Date? {
-        ISO8601DateFormatter().date(from: idea.startsAtUtc)
+    /// Compact countdown for the time chip — `viewModel.startsInShortLabel`
+    /// when available, falling back to the raw startsAt for legacy
+    /// payloads. Server emits "15m" / "2h 30m" / "Starting now" /
+    /// weekday-short / "Apr 28" — all rendered verbatim.
+    private var startsInShort: String {
+        if let label = idea.viewModel?.startsInShortLabel { return label }
+        return idea.startsAtUtc
     }
 
-    private var startsInHumanReadable: String {
-        if let label = idea.viewModel?.startsInLabel {
+    /// Race-duration chip text from the server's pre-baked label.
+    /// "20 laps" / "45 min" / nil when the schedule entry has no limit.
+    private var durationLabel: String? { idea.viewModel?.durationLabel }
+
+    /// Track display label — `viewModel.trackLabel` is the canonical
+    /// form ("Sebring International Raceway — National"). Falls back
+    /// to the lookup's displayName + manual config concat for legacy
+    /// payloads where the server post-process hasn't filled the field.
+    private var trackDisplayName: String {
+        if let label = idea.viewModel?.trackLabel, !label.isEmpty {
             return label
         }
-        guard let date = startsDate else { return idea.startsAtUtc }
-        let interval = date.timeIntervalSinceNow
-        if interval < 0 { return "Starting now" }
-        let fmt = RelativeDateTimeFormatter()
-        fmt.unitsStyle = .full
-        fmt.dateTimeStyle = .named
-        if interval < 12 * 3600 {
-            return fmt.localizedString(for: date, relativeTo: Date())
-        }
-        let df = DateFormatter()
-        df.dateFormat = interval < 7 * 86400 ? "EEEE 'at' h:mm a" : "EEE MMM d 'at' h:mm a"
-        return df.string(from: date)
-    }
-
-    private var durationLabel: String? {
-        if let label = idea.viewModel?.durationLabel { return label }
-        if let laps = idea.raceLapLimit, laps > 0 { return "\(laps) laps" }
-        if let mins = idea.raceTimeLimit, mins > 0 { return "\(mins) min" }
-        return nil
-    }
-
-    /// Track display label with optional config suffix — matches the
-    /// web's `trackDisplay`.
-    private var trackDisplayName: String {
         let base = trackLookup?.displayName ?? idea.trackName
         if let cfg = idea.trackConfig, !cfg.isEmpty {
             return "\(base) — \(cfg)"
@@ -312,7 +321,7 @@ struct NextRaceCard: View {
             Image(systemName: "clock")
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(.white)
-            Text(startsInHumanReadable)
+            Text(startsInShort)
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(1)
@@ -325,20 +334,21 @@ struct NextRaceCard: View {
         )
     }
 
-    /// "Match XX" chip — label on the left, score on the right, score
-    /// colored by `scoreTint`. Mirrors the web's score chip.
+    /// "Match XX" chip — small "Match" label + bold colored score.
+    /// Mirrors the web's pill: dark translucent background, score
+    /// colored by `scoreTint`, "Match" subtle white-60.
     private var scoreChip: some View {
         HStack(spacing: 6) {
             Text("Match")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.6))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.65))
             Text("\(Int(idea.score))")
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
                 .monospacedDigit()
                 .foregroundColor(scoreTint)
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
         .background(
             Capsule()
                 .fill(Color.black.opacity(0.55))
@@ -712,7 +722,12 @@ struct PreviousRaceCardView: View {
 
     private var session: Dashboard.PreviousRaceSession { card.session }
     private var vm: Dashboard.PreviousRaceViewModel { card.viewModel }
-    private var trackLookup: Dashboard.TrackLookup? { lookups?.track(for: session.trackName) }
+    private var trackLookup: Dashboard.TrackLookup? {
+        // Prefer the server-baked `trackLookupKey` (synonym-folded by
+        // `getDashboardData()` post-processing). Falls back to the
+        // legacy raw-name lookup for older server responses.
+        lookups?.trackByKey(vm.trackLookupKey) ?? lookups?.track(for: session.trackName)
+    }
     private var carLookup: Dashboard.CarLookup?     { lookups?.car(for: session.carModel) }
 
     private var positionColor: Color {
@@ -976,7 +991,12 @@ struct PreviousRaceListRow: View {
 
     private var vm: Dashboard.PreviousRaceViewModel { card.viewModel }
     private var session: Dashboard.PreviousRaceSession { card.session }
-    private var trackLookup: Dashboard.TrackLookup? { lookups?.track(for: session.trackName) }
+    private var trackLookup: Dashboard.TrackLookup? {
+        // Prefer the server-baked `trackLookupKey` (synonym-folded by
+        // `getDashboardData()` post-processing). Falls back to the
+        // legacy raw-name lookup for older server responses.
+        lookups?.trackByKey(vm.trackLookupKey) ?? lookups?.track(for: session.trackName)
+    }
     private var positionColor: Color {
         if let hex = vm.positionColorHex { return Color(hex: hex) }
         return Palette.textDim
