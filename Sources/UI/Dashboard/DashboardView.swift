@@ -71,45 +71,57 @@ struct DashboardView: View {
     private var isLoadingInitialData: Bool { poller.latest == nil && poller.isPolling }
 
     var body: some View {
-        ZStack {
-            // No local ThemedBackgroundView — the signed-in root
-            // (ContentView) owns it so the image extends behind the
-            // sidebar too. The dashboard just sits on top.
-            VStack(spacing: 0) {
-                HStack(alignment: .top, spacing: 0) {
-                    mainColumn
-                        .frame(maxWidth: .infinity)
+        // NavigationStack wraps the dashboard so cards inside any tab
+        // (Previous Races, etc.) can drill into a per-race detail
+        // view via NavigationLink(value: sessionId). When a race is
+        // pushed the whole dashboard (sidebar + main column +
+        // DataStrip) gets swapped out — that's the full-takeover
+        // behavior the web's `/drive/race/[id]` page has, applied to
+        // the macOS detail-pane real estate.
+        NavigationStack {
+            ZStack {
+                VStack(spacing: 0) {
+                    HStack(alignment: .top, spacing: 0) {
+                        mainColumn
+                            .frame(maxWidth: .infinity)
 
-                    // Glass sidebar is its own floating panel now —
-                    // drop the vertical hairline that used to live
-                    // between it and the main column, and give the
-                    // panel breathing room on all four sides so its
-                    // rounded corners + shadow render cleanly.
-                    SidebarTabs(
-                        tracks: dashboard?.topTracks ?? [],
-                        cars: dashboard?.topCars ?? [],
-                        lookups: dashboard?.lookups
+                        // Glass sidebar is its own floating panel now —
+                        // drop the vertical hairline that used to live
+                        // between it and the main column, and give the
+                        // panel breathing room on all four sides so its
+                        // rounded corners + shadow render cleanly.
+                        SidebarTabs(
+                            tracks: dashboard?.topTracks ?? [],
+                            cars: dashboard?.topCars ?? [],
+                            lookups: dashboard?.lookups
+                        )
+                        .frame(width: 320)
+                        .padding(.top, 8)
+                        .padding(.trailing, 12)
+                        .padding(.bottom, 10)
+                    }
+                    .frame(maxHeight: .infinity)
+
+                    // DataStrip sits at the bottom of the detail view as a
+                    // persistent stats footer — same role the web uses it
+                    // for up top, just reading as a "status bar" in the
+                    // native app's Mac-idiom layout.
+                    DataStrip(
+                        dashboard: dashboard,
+                        safetyRating: dashboard?.safetyRating,
+                        context: currentContext,
                     )
-                    .frame(width: 320)
-                    .padding(.top, 8)
-                    .padding(.trailing, 12)
-                    .padding(.bottom, 10)
                 }
-                .frame(maxHeight: .infinity)
 
-                // DataStrip sits at the bottom of the detail view as a
-                // persistent stats footer — same role the web uses it
-                // for up top, just reading as a "status bar" in the
-                // native app's Mac-idiom layout.
-                DataStrip(
-                    dashboard: dashboard,
-                    safetyRating: dashboard?.safetyRating,
-                    context: currentContext,
-                )
+                if isLoadingInitialData {
+                    ProgressView().controlSize(.large)
+                }
             }
-
-            if isLoadingInitialData {
-                ProgressView().controlSize(.large)
+            // Drill-in destinations registered at the stack level
+            // so any NavigationLink(value: sessionId) inside the
+            // dashboard pushes a full SessionDetailView.
+            .navigationDestination(for: SessionDetailRoute.self) { route in
+                SessionDetailView(sessionId: route.sessionId)
             }
         }
         // Refetch the canonical Race-Now verdict whenever the When

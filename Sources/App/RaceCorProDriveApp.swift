@@ -25,8 +25,7 @@ struct RaceCorProDriveApp: App {
                         .environmentObject(authManager)
                 case .authenticating:
                     ZStack {
-                        ThemedBackgroundView()
-                        Palette.bgBase.opacity(0.4).ignoresSafeArea()
+                        Palette.bgBase.ignoresSafeArea()
                         VStack(spacing: 12) {
                             Logomark(height: 56, tone: .color)
                             ProgressView()

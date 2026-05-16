@@ -6,13 +6,7 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            // Random themed livery behind the sign-in card — same
-            // backdrop the signed-in dashboard uses, so the whole app
-            // reads as one continuous visual from first launch. A
-            // translucent dark scrim on top keeps the form legible over
-            // bright photos.
-            ThemedBackgroundView()
-            Palette.bgBase.opacity(0.25).ignoresSafeArea()
+            Palette.bgBase.ignoresSafeArea()
 
             VStack(spacing: 28) {
                 Spacer()

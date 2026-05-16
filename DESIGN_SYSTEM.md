@@ -72,7 +72,6 @@ All in `Sources/DesignSystem/BrandKit.swift` or `Sources/UI/Dashboard/DashboardC
 - **`Sparkline(values:trend:)`** — SwiftUI `Canvas` line chart. Trend drives color: up=success, down=brand, flat=textDim.
 - **`.panel()` / `.panelAccent()`** — `ultraThinMaterial` + subtle dark tint + hairline border. The card treatment used everywhere.
 - **`BrandGlow(intensity:)`** — red radial gradient for accent lighting behind logomarks. Do not use on login/authenticating — user-visible red is reserved for actual alerts.
-- **`ThemedBackgroundView`** — root-of-window backdrop. Fetches livery from `themeSets` via `ThemeStore`, falls back to neutral dark gradient. Full-bleed `.ignoresSafeArea()`.
 - **`LicenseBadge(label:tint:)`** — license class pill. `A=#7cdff0` · `B=#6fcf69` · `C=#ffcf4a` · `D=#ff8c42` · `R=brand`.
 - **`SidebarMenuRow(title:systemImage:menu:)`** — 1-line dropdown row for sidebar footer. Both theme + account use this — never hand-build new footer rows.
 - **`DashboardTabs(selection:)`** / **`SidebarTabs`** — segmented-style tab rows with red underline active state.
@@ -92,7 +91,6 @@ All in `Sources/DesignSystem/BrandKit.swift` or `Sources/UI/Dashboard/DashboardC
 - `ThemeStore.shared` (ObservableObject) fetches `/api/theme-sets` on app launch.
 - Auto-rotation by default (`selectedSlug == "__auto__"`, 5-min interval).
 - User can pin a theme via `ThemePicker`.
-- Active image URL published via `store.activeImageURL` — resolved from either DB `liveryImage` or `/api/unsplash/background?brand=<slug>&theme=dark`.
 
 ## Auth
 
@@ -116,7 +114,6 @@ All in `Sources/DesignSystem/BrandKit.swift` or `Sources/UI/Dashboard/DashboardC
 - Web `/drive/dashboard` DataStrip at top → macOS DataStrip at **bottom** (read as status-bar-style footer).
 - Web 3-tab dashboard switcher → same in native.
 - Web right sidebar with Tracks/Cars → same in native, 320pt fixed width.
-- Web auto-fetch Unsplash background → native mirrors through same endpoint + same cache semantics.
 
 ## Refresh strategy
 

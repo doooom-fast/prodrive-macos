@@ -8,13 +8,16 @@ import SwiftUI
 /// lives as the "Previous Races" tab on the Dashboard; Safety /
 /// Composure / Debrief are dashboard sub-panels; Settings is reached
 /// via ⌘, (standard macOS) rather than a sidebar item.
+/// Top-level destinations. Moments is intentionally NOT in this list
+/// even though the web has a `/drive/moments` route — moments are
+/// surfaced as a slide-in drawer from a dedicated bottom-left button
+/// rather than as a switchable detail view, mirroring the web's
+/// `MomentsDrawer` UX rather than the full-page route.
 enum Destination: String, CaseIterable {
     case dashboard = "Dashboard"
     case dna = "DNA"
-    case when = "When"
     case tracks = "Tracks"
     case cars = "Cars"
-    case moments = "Moments"
     case library = "Library"
 
     /// Matches the web's lucide-react icon choice so the two platforms
@@ -30,10 +33,8 @@ enum Destination: String, CaseIterable {
         switch self {
         case .dashboard: return .lucide(.dashboard)
         case .dna:       return .lucide(.dna)
-        case .when:      return .lucide(.when)
         case .tracks:    return .lucide(.tracks)
         case .cars:      return .lucide(.cars)
-        case .moments:   return .lucide(.moments)
         case .library:   return .systemImage("film.stack")
         }
     }
@@ -52,8 +53,16 @@ enum Destination: String, CaseIterable {
 /// icon target without fighting the sidebar list's padding heuristics.
 struct ContentView: View {
     @State private var selectedDestination: Destination = .dashboard
+    /// Whether the Moments slide-in drawer is currently visible.
+    /// The Moments rail item toggles this instead of switching the
+    /// detail view — moments are a peek, not a full page.
+    @State private var showMomentsDrawer = false
     @EnvironmentObject var authManager: AuthManager
     @ObservedObject private var themeStore: ThemeStore
+    /// Shared dashboard poller — ContentView reads `recentMoments` +
+    /// `lookups` for the Moments drawer overlay; the Dashboard view
+    /// reads the same publisher independently.
+    @ObservedObject private var poller: DashboardPoller
     let user: Me
 
     /// Rail width — narrow enough to read as a decoration, wide enough
@@ -64,24 +73,40 @@ struct ContentView: View {
     init(user: Me) {
         self.user = user
         self.themeStore = .shared
+        self.poller = .shared
     }
 
     var body: some View {
         ZStack {
-            ThemedBackgroundView()
+            Palette.bgBase.ignoresSafeArea()
 
             HStack(spacing: 0) {
-                // Rail hugs its content and pins to the TOP of its
-                // column, just beneath the traffic-light cluster. The
-                // outer padding pushes it down clear of the close /
-                // minimize / zoom row so nothing overlaps.
-                rail
-                    .frame(width: Self.railWidth)
-                    .frame(maxHeight: .infinity, alignment: .top)
+                // Left column holds two stacked elements: the
+                // destinations rail at the TOP (under the traffic
+                // lights), and a single Moments-trigger button
+                // pinned at the BOTTOM. A Spacer between them lets
+                // both anchor to their own edge cleanly.
+                VStack(spacing: 0) {
+                    rail
+                    Spacer(minLength: 0)
+                    momentsTrigger
+                }
+                .frame(width: Self.railWidth)
+                .frame(maxHeight: .infinity)
 
                 detailView(for: selectedDestination)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+
+            // Moments slide-in drawer overlays everything. Always in
+            // the view tree so the slide animation has a stable
+            // transition target; only renders its panel + backdrop
+            // when `showMomentsDrawer == true`.
+            MomentsDrawer(
+                isOpen: $showMomentsDrawer,
+                moments: poller.latest?.recentMoments ?? [],
+                lookups: poller.latest?.lookups
+            )
         }
         .ignoresSafeArea(.container, edges: .top)
     }
@@ -102,7 +127,17 @@ struct ContentView: View {
                     icon: dest.iconSource,
                     tooltip: dest.rawValue,
                     isActive: selectedDestination == dest,
-                    action: { selectedDestination = dest }
+                    action: {
+                        selectedDestination = dest
+                        // Close the moments drawer when navigating
+                        // away — leaving it hovering over an unrelated
+                        // detail page is jarring.
+                        if showMomentsDrawer {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                showMomentsDrawer = false
+                            }
+                        }
+                    }
                 )
             }
 
@@ -121,6 +156,41 @@ struct ContentView: View {
         // ~28pt tall; 38pt of top padding gives the rail a breath of
         // space below the close/minimize/zoom row.
         .padding(.top, 38)
+        .padding(.leading, 12)
+    }
+
+    // MARK: - Moments trigger (bottom-left)
+
+    /// Stand-alone Moments button pinned to the bottom-left corner
+    /// of the window. Lives outside the destinations rail because
+    /// Moments doesn't switch the detail view — it pops the slide-in
+    /// drawer. Putting the button on its own makes that interaction
+    /// model legible at a glance: rail items navigate, this one
+    /// peeks. Same 36×36 cell footprint and active-pill styling as
+    /// the destination buttons so the two read as one design system.
+    @ViewBuilder
+    private var momentsTrigger: some View {
+        VStack(spacing: 0) {
+            RailIconButton(
+                icon: .lucide(.moments),
+                tooltip: "Moments",
+                isActive: showMomentsDrawer,
+                action: {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showMomentsDrawer.toggle()
+                    }
+                }
+            )
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+        .liquidGlassBackground(cornerRadius: 18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.35), radius: 20, x: 0, y: 10)
+        .padding(.bottom, 12)
         .padding(.leading, 12)
     }
 
@@ -248,15 +318,11 @@ struct ContentView: View {
         case .dashboard:
             DashboardView()
         case .dna:
-            PlaceholderView(title: "Driver DNA", subtitle: "8-axis performance radar coming soon")
-        case .when:
-            PlaceholderView(title: "When Engine", subtitle: "Time-of-day performance analysis coming soon")
+            DriverDNAView()
         case .tracks:
-            PlaceholderView(title: "Tracks", subtitle: "Track mastery library coming soon")
+            TracksView()
         case .cars:
-            PlaceholderView(title: "Cars", subtitle: "Car affinity breakdown coming soon")
-        case .moments:
-            PlaceholderView(title: "Moments", subtitle: "Career highlights & milestones coming soon")
+            CarsView()
         case .library:
             LibraryView()
         }
