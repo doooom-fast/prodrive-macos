@@ -313,6 +313,27 @@ struct Dashboard: Codable {
         let variantDescription: String?
     }
 
+    /// One entry in the 8-axis DNA insight card grid. Server emits
+    /// label / value (0–100) / description / trend already; native
+    /// renders these verbatim with no client-side string assembly.
+    /// Source: `apps/web-api/src/calc/driver-dna.ts → DNAInsight`.
+    struct DNAInsight: Codable, Identifiable {
+        /// Internal axis key — `consistency` / `racecraft` /
+        /// `cleanness` / `endurance` / `adaptability` /
+        /// `improvement` / `wetWeather` / `experience`. Drives the
+        /// SF Symbol icon mapping client-side; never displayed.
+        let dimension: String
+        /// Human-readable axis name ("Consistency", "Wet Weather", …).
+        let label: String
+        let value: Double
+        let description: String
+        /// "improving" | "declining" | "stable" — drives the trend
+        /// chip color + label.
+        let trend: String
+
+        var id: String { dimension }
+    }
+
     let stats: Stats
     let pluginConnected: Bool
     // Server returns these as Record<category, …> — keep them as a
@@ -400,6 +421,10 @@ struct Dashboard: Codable {
 
     let driverDNA: DriverDNAData?
     let driverArchetype: DriverArchetypeData?
+    /// Per-axis DNA insight cards. Optional on the wire so older
+    /// server responses still decode; the DNA detail view falls back
+    /// to a "collecting data" empty state when nil/empty.
+    let dnaInsights: [DNAInsight]?
     let lookups: Lookups?
     let scatterBuckets: [ScatterBucket]?
 

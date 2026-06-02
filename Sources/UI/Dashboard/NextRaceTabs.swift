@@ -736,16 +736,25 @@ struct PreviousRaceCardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            heroHeader
-            bodySection
+        // The whole card is a NavigationLink — tapping anywhere
+        // pushes `SessionDetailView(sessionId:)` onto the dashboard's
+        // NavigationStack. Using `.buttonStyle(.plain)` and
+        // `.contentShape(Rectangle())` keeps the visual identical
+        // (no SwiftUI accent overlay or hit-test gaps).
+        NavigationLink(value: SessionDetailRoute(sessionId: session.id)) {
+            VStack(alignment: .leading, spacing: 0) {
+                heroHeader
+                bodySection
+            }
+            .liquidGlassBackground(cornerRadius: 12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Palette.borderSubtle, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(Rectangle())
         }
-        .liquidGlassBackground(cornerRadius: 12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Palette.borderSubtle, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .buttonStyle(.plain)
     }
 
     // MARK: Hero
@@ -1003,40 +1012,46 @@ struct PreviousRaceListRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            VStack(spacing: 0) {
-                Text(vm.positionDisplay ?? "—")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundColor(positionColor)
-            }
-            .frame(width: 56, alignment: .center)
+        // Same drill-in pattern as the card view — entire row is a
+        // NavigationLink so the list mode keeps parity with cards.
+        NavigationLink(value: SessionDetailRoute(sessionId: session.id)) {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(spacing: 0) {
+                    Text(vm.positionDisplay ?? "—")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(positionColor)
+                }
+                .frame(width: 56, alignment: .center)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(trackLookup?.displayName ?? vm.trackLabel)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Palette.textPrimary)
-                    .lineLimit(1)
-                Text(session.carModel)
-                    .font(.system(size: 11))
-                    .foregroundColor(Palette.textSecondary)
-                    .lineLimit(1)
-            }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(trackLookup?.displayName ?? vm.trackLabel)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Palette.textPrimary)
+                        .lineLimit(1)
+                    Text(session.carModel)
+                        .font(.system(size: 11))
+                        .foregroundColor(Palette.textSecondary)
+                        .lineLimit(1)
+                }
 
-            Spacer()
+                Spacer()
 
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(vm.dateLabel)
-                    .font(.system(size: 10))
-                    .foregroundColor(Palette.textDim)
-                if vm.bestLapLabel != "—" {
-                    Text(vm.bestLapLabel)
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(Palette.textMuted)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(vm.dateLabel)
+                        .font(.system(size: 10))
+                        .foregroundColor(Palette.textDim)
+                    if vm.bestLapLabel != "—" {
+                        Text(vm.bestLapLabel)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(Palette.textMuted)
+                    }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .buttonStyle(.plain)
     }
 }
