@@ -16,7 +16,12 @@ import Foundation
 actor CalcClient {
     static let shared = CalcClient()
 
-    private let baseURL = "https://api.prodrive.racecor.io"
+    // Apex host, NOT an `api.` subdomain: the zone cert covers `racecor.io`
+    // and `*.racecor.io` only (one label deep), so `api.prodrive.racecor.io`
+    // (two deep) fails the TLS handshake and every calc call throws. Same
+    // origin `APIClient.shared` uses. Keep on the apex unless a cert covering
+    // the api subdomain is provisioned (Cloudflare ACM / Total TLS).
+    private let baseURL = "https://prodrive.racecor.io"
     private let session: URLSession
     private var bearerToken: String?
 
